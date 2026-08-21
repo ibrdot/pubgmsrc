@@ -103,7 +103,6 @@ hsyscall     → blocks ptrace(26), kill(129), clone(220)
 | Game | Version |
 |------|---------|
 | PUBG Mobile | 4.5.x |
-| BGMI | 4.5.x |
 
 ---
 
