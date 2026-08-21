@@ -227,6 +227,6 @@ Use entirely at your own risk.
 
 **Made with ❤️ by [ibrdot](https://github.com/ibrdot)**
 
-`© 2025 ibrdot — github.com/ibrdot`
+`© 2026 ibrdot — github.com/ibrdot`
 
 </div>
