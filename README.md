@@ -3,7 +3,7 @@
 </h1>
 
 <p align="center">
-  <b>PUBG Mobile / BGMI Source — v4.5</b><br>
+  <b>PUBG Mobile v4.5</b><br>
   by <a href="https://github.com/ibrdot">ibrdot</a>
 </p>
 
