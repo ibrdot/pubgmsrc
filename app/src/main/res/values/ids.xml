@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <item name="progress_percentage" type="id" />
+    <item name="progress_image" type="id" />
+    <item name="progress_text" type="id" />
+</resources>

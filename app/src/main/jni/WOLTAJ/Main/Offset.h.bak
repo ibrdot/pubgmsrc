@@ -1,0 +1,23 @@
+namespace Data {
+    SDK::ASTExtraPlayerCharacter *localPlayer = nullptr;
+    SDK::ASTExtraPlayerController *localController = nullptr;
+
+    namespace Cheat {
+        float Velocityop = 0.f;
+        float Altitute = 0.f;
+        float travlled = 0;
+        uintptr_t UE4;
+        uintptr_t Anogs;
+        android_app* App = 0;
+    }
+}
+
+
+#define GNativeAndroidApp_Offset 0xec732a8
+#define GNames_Offset 0x8939470
+#define GUObject_Offset 0xef3b3f0
+#define GetActorArray 0xa6ca440
+#define GEngine_Offset 0xf1fb900
+#define Actors_Offset 0xA0
+#define Process_Event_Offset 0x8bac0a8
+#define PATCH_LIB
