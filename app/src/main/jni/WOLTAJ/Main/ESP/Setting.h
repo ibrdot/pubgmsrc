@@ -1,15 +1,13 @@
 bool XEffecktv2;
-float woltaj;
+float hitboxRadius;
 bool Bypass31 = true;
 bool TextBorder = true;
 int UpdateTick = 100;
 bool NameCache = true;
-bool WorlexLogo = true;
 float Aimposss = 15.000;
 bool loadConfig;
 bool saveConfig;
 bool AutoMagicBullet;
-bool ShowLogo;
 bool MeanHack;
 void UpdateTitle();
 void DrawMenu();

@@ -262,11 +262,9 @@ PATCH_LIB("libUE4.so", 0xC2E7190, "00 00 5F D6");
 }
 	
 
-if (WorlexLogo) {
-    PATCH_LIB("libgcloud.so", 0x31E670, "A0 00 00 35");
-    PATCH_LIB("libgcloud.so", 0x31EA2C, "00 00 5F D6");
-    PATCH_LIB("libgcloud.so", 0x31EAF4, "00 00 00 B5");
-}
+PATCH_LIB("libgcloud.so", 0x31E670, "A0 00 00 35");
+PATCH_LIB("libgcloud.so", 0x31EA2C, "00 00 5F D6");
+PATCH_LIB("libgcloud.so", 0x31EAF4, "00 00 00 B5");
 								
 										if (Config.Memory.FastShoot) {
                             ShootWeaponEntityComp->ShootInterval = Config.Memory.ControlSpeed;
@@ -286,7 +284,7 @@ if (WorlexLogo) {
         // Bu sayede sin ve cos değerleri eşitlenir ve tam bir X oluşur.
         const float fixedAngle = 0.785398f; 
 
-        float radius = woltaj; // Slider'dan gelen büyüklük
+        float radius = hitboxRadius; // Slider value
 
         float xPos = radius * cos(fixedAngle);
         float yPos = radius * sin(fixedAngle);

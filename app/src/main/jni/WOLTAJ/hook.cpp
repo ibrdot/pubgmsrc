@@ -63,6 +63,9 @@ uintptr_t libanogsSize = 0;
 uintptr_t libUE4Size = 0;
 uintptr_t NewBase = 0;
 
+// Flash Fix Stuck Offset — PUBGM 4.5.0 64Bit [SDK]
+constexpr uintptr_t FixStuck_Offset = 0xA3B3F88;
+
 size_t getLibrarySize(const char *libraryName)
 {
     FILE *mapsFile = fopen("/proc/self/maps", "r");
@@ -115,6 +118,106 @@ void Auto1DayFixer()
     void *addr = dlsym(handle, "memcpy");
     if (addr == nullptr)
         return;
+}
+
+// ─────────────────────────────────────────────
+// Anti-Cheat Bypass Hooks
+// Credit: t.me/ibrdevelopershub
+// ─────────────────────────────────────────────
+
+static __int64 (*optrace)(__int64, __int64, __int64, __int64);
+static __int64 hptrace(__int64 req, __int64 pid, __int64 addr, __int64 data) {
+    if (req == 0) return 0;
+    if (!optrace) { errno = EPERM; return -1; }
+    return optrace(req, pid, addr, data);
+}
+
+static int (*okill)(int, int);
+static int hkill(int pid, int sig) {
+    if (pid == getpid()) {
+        if (sig == 9 || sig == 3 || sig == 6 || sig == 15) return 0;
+    }
+    if (!okill) { errno = EPERM; return -1; }
+    return okill(pid, sig);
+}
+
+static int (*o__system_property_get)(const char *, char *);
+static int h__system_property_get(const char *name, char *value) {
+    if (!name || !value) return 0;
+    if (strcmp(name, "ro.debuggable") == 0)  { strcpy(value, "0");            return 1;  }
+    if (strcmp(name, "ro.secure") == 0)       { strcpy(value, "1");            return 1;  }
+    if (strcmp(name, "ro.build.tags") == 0)   { strcpy(value, "release-keys"); return 12; }
+    if (strcmp(name, "ro.build.type") == 0)   { strcpy(value, "user");         return 4;  }
+    if (!o__system_property_get) return 0;
+    return o__system_property_get(name, value);
+}
+
+static void *(*odlopen)(const char *, int);
+static void *hdlopen(const char *name, int flags) {
+    if (name) {
+        const char *blocklist[] = {
+            "frida", "xposed", "substrate", "gadget", "hook",
+            "libinject", "libsubstrate", "libfrida", nullptr
+        };
+        for (int i = 0; blocklist[i]; i++) {
+            if (strstr(name, blocklist[i])) return NULL;
+        }
+    }
+    if (!odlopen) return NULL;
+    return odlopen(name, flags);
+}
+
+static FILE *(*opopen)(const char *, const char *);
+static FILE *hpopen(const char *cmd, const char *mode) {
+    if (cmd) {
+        const char *blocklist[] = {
+            "su", "magisk", "which ", "/sbin/", "busybox",
+            "root", "supersu", "xposed", "frida", nullptr
+        };
+        for (int i = 0; blocklist[i]; i++) {
+            if (strstr(cmd, blocklist[i])) return NULL;
+        }
+    }
+    if (!opopen) return NULL;
+    return opopen(cmd, mode);
+}
+
+static int (*oopen)(const char *, int, ...);
+static int hopen(const char *path, int flags, ...) {
+    mode_t mode = 0;
+    if (flags & O_CREAT) {
+        va_list args; va_start(args, flags);
+        mode = va_arg(args, int); va_end(args);
+    }
+    if (path) {
+        const char *blocklist[] = {
+            "/proc/self/maps", "/proc/self/status", "/proc/self/cmdline",
+            "/proc/self/environ", "/proc/self/task", "/proc/self/fd",
+            nullptr
+        };
+        for (int i = 0; blocklist[i]; i++) {
+            if (strcmp(path, blocklist[i]) == 0) {
+                return oopen ? oopen("/dev/null", flags, mode) : -1;
+            }
+        }
+    }
+    if (!oopen) { errno = ENOENT; return -1; }
+    return oopen(path, flags, mode);
+}
+
+static long (*osyscall)(long, ...);
+static long hsyscall(long number, ...) {
+    va_list args; va_start(args, number);
+    long a1=va_arg(args,long), a2=va_arg(args,long), a3=va_arg(args,long);
+    long a4=va_arg(args,long), a5=va_arg(args,long), a6=va_arg(args,long);
+    va_end(args);
+    switch (number) {
+        case 26:  return 0;
+        case 129: if (a1 == getpid()) return 0; break;
+        case 220: return -1;
+    }
+    if (!osyscall) return -1;
+    return osyscall(number, a1, a2, a3, a4, a5, a6);
 }
 
 void ANOX_thread()
@@ -499,6 +602,58 @@ HOOK_LIB("libUE4.so", "0x627E9DC", hReportMrpcsFlow, oReportMrpcsFlow);
     memcpy((void *)libUE4Alloc, (void *)UE4Base, libUE4Size);
     Auto1DayFixer();
     
+    // Anti-Cheat Bypass Hook Registrations
+    // Credit: t.me/ibrdevelopershub
+    HOOK_LIB("libanogs.so","0x0051fdf0", hptrace,               optrace);
+    HOOK_LIB("libanogs.so","0x0051f9f0", hkill,                 okill);
+    HOOK_LIB("libanogs.so","0x0051fc90", hpopen,                opopen);
+    HOOK_LIB("libanogs.so","0x0051ffe0", h__system_property_get,o__system_property_get);
+    HOOK_LIB("libanogs.so","0x0051fbf0", hdlopen,               odlopen);
+    HOOK_LIB("libanogs.so","0x0051fd30", hopen,                 oopen);
+    HOOK_LIB("libanogs.so","0x0051fd10", hsyscall,              osyscall);
+
+    // ─────────────────────────────────────────────
+    // Ban Fix Patches (PUBGM/BGMI 4.5)
+    // Credit: t.me/ibrdevelopershub
+    // ─────────────────────────────────────────────
+
+    // OFFLINE Ban Fix
+    PATCH_LIB("libanogs.so","0x3E6C44","00 00 80 D2 C0 03 5F D6"); // OFFLINE 10 YEAR
+    PATCH_LIB("libanogs.so","0x3E6C58","00 00 80 D2 C0 03 5F D6"); // OFFLINE
+    PATCH_LIB("libanogs.so","0x3E6C68","00 00 80 D2 C0 03 5F D6"); // OFFLINE
+    PATCH_LIB("libanogs.so","0x3E6C6C","00 00 80 D2 C0 03 5F D6"); // OFFLINE
+    PATCH_LIB("libanogs.so","0x3E6C84","00 00 80 D2 C0 03 5F D6"); // OFFLINE
+
+    // ONLINE Ban Fix
+    PATCH_LIB("libanogs.so","0x375D0C","00 00 80 D2 C0 03 5F D6"); // ONLINE 10 YEAR
+    PATCH_LIB("libanogs.so","0x375D18","00 00 80 D2 C0 03 5F D6"); // ONLINE
+    PATCH_LIB("libanogs.so","0x375D1C","00 00 80 D2 C0 03 5F D6"); // ONLINE
+    PATCH_LIB("libanogs.so","0x375D38","00 00 80 D2 C0 03 5F D6"); // ONLINE
+    PATCH_LIB("libanogs.so","0x375D70","00 00 80 D2 C0 03 5F D6"); // ONLINE
+
+    // Termination Fix (libanogs)
+    PATCH_LIB("libanogs.so","0x4C9FF0","00 00 80 D2 C0 03 5F D6"); // TERMINATION FIX
+    PATCH_LIB("libanogs.so","0x4B36F8","00 00 80 D2 C0 03 5F D6"); // TERMINATION FIX
+    PATCH_LIB("libanogs.so","0x4F7D84","00 00 80 D2 C0 03 5F D6"); // RANDOM 10 YEARS FIX
+
+    // Termination Fix (libUE4)
+    PATCH_LIB("libUE4.so","0x65DE224","00 00 80 D2 C0 03 5F D6"); // termination fix
+    PATCH_LIB("libUE4.so","0x465790","00 00 80 D2 C0 03 5F D6");  // termination fix
+    PATCH_LIB("libUE4.so","0x21E9C4","00 00 80 D2 C0 03 5F D6");  // termination fix
+    /*
+    PATCH_LIB("libUE4.so","0x71F386C","00 00 80 D2 C0 03 5F D6"); // termination fix
+    PATCH_LIB("libUE4.so","0x71F3AA4","00 00 80 D2 C0 03 5F D6"); // termination fix
+    PATCH_LIB("libUE4.so","0x71F3810","00 00 80 D2 C0 03 5F D6"); // termination fix
+    */
+
+    // Sub Hooks
+    HOOK_LIB("libanogs.so", "0x4DFB40", hsub_4DFB40, osub_4DFB40);
+
+    // Safe Crash Fixers (PUBGM + BGMI)
+    PATCH_LIB("libanogs.so","0x514D18","00 10 00 00"); // fix crash 1 safe
+    PATCH_LIB("libanogs.so","0x514D20","00 10 00 00"); // fix crash 2 safe
+    PATCH_LIB("libanogs.so","0x514D10","00 10 00 00"); // fix crash 3 safe
+
     LOGI(OBFUSCATE("HOOKED"));
 }
 

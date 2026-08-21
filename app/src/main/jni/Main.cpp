@@ -241,10 +241,9 @@ void DrawMenu()
                 ImGui::PushStyleColor(ImGuiCol_ButtonHovered, ImColor(60, 180, 240).Value);
                 ImGui::PushStyleColor(ImGuiCol_ButtonActive, ImColor(20, 140, 200).Value);
                 
-                if (ImGui::Button("Kanal", ImVec2(92, 32)))
+                if (ImGui::Button("GitHub", ImVec2(92, 32)))
                 {
-                    // Android Intent veya URL açma fonksiyonunu buraya ekleyebilirsin
-                    // Örn: OpenURL("https://t.me/kanal_linki");
+                    // https://github.com/ibrdot
                 }
                 ImGui::PopStyleColor(3);
 
@@ -855,7 +854,7 @@ void DrawMenu()
                     {
                         if (XEffecktv2) {
                             if (ImGui::CollapsingHeader("MHitbox X")) {
-                                ImGui::SliderFloat("##HitboxVal", &woltaj, 10.0f, 9999.0f);
+                                ImGui::SliderFloat("##HitboxVal", &hitboxRadius, 10.0f, 9999.0f);
                             }
                         }
                         if (Setting::CrazyCar)
